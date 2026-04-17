@@ -33,10 +33,11 @@ Used for **parking** and **metro disruptions**.
 2. Create an application and note your **API key**
 3. Set environment variable: `TFNSW_API_KEY=<your key>`
 
-The car park facility ID defaults to `MACs100034` (Cherrybrook Station).  
-Verify or look up the correct ID from the TfNSW Open Data portal car park dataset and override with:
+The app calls `GET /v1/carpark` (all facilities) and automatically finds the entry named "Cherrybrook". No facility ID is needed by default.
+
+If TfNSW ever adds multiple Cherrybrook entries or renames the facility, you can pin a specific numeric facility ID:
 ```
-CARPARK_FACILITY_ID=<correct id>
+CARPARK_FACILITY_ID=<numeric id from TfNSW portal>
 ```
 
 ### 2. NSW FuelCheck

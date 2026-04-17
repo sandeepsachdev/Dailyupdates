@@ -10,6 +10,8 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.List;
+
 @Service
 public class ParkingService {
 
@@ -19,7 +21,8 @@ public class ParkingService {
     @Value("${app.tfnsw.api-key:}")
     private String apiKey;
 
-    @Value("${app.tfnsw.carpark.facility-id:MACs100034}")
+    // Optional override — leave blank to auto-discover Cherrybrook from the full list
+    @Value("${app.tfnsw.carpark.facility-id:}")
     private String facilityId;
 
     @Autowired
@@ -36,9 +39,13 @@ public class ParkingService {
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.set("Authorization", "apikey " + apiKey);
-            headers.setAccept(java.util.List.of(MediaType.APPLICATION_JSON));
+            headers.setAccept(List.of(MediaType.APPLICATION_JSON));
 
-            String url = CARPARK_URL + "?facility=" + facilityId;
+            // Use specific facility ID if provided, otherwise fetch all and search
+            String url = (facilityId != null && !facilityId.isBlank())
+                ? CARPARK_URL + "?facility=" + facilityId
+                : CARPARK_URL;
+
             ResponseEntity<String> response = restTemplate.exchange(
                 url, HttpMethod.GET, new HttpEntity<>(headers), String.class);
 
@@ -52,33 +59,54 @@ public class ParkingService {
     private ParkingInfo parseParkingResponse(String json) throws Exception {
         JsonNode root = mapper.readTree(json);
 
+        // All-facilities response is an array — search for Cherrybrook
+        if (root.isArray()) {
+            for (JsonNode node : root) {
+                String name = extractName(node);
+                if (name != null && name.toLowerCase().contains("cherrybrook")) {
+                    return buildInfo(node, name);
+                }
+            }
+            return ParkingInfo.error("Cherrybrook not found in TfNSW car park list. "
+                + "Set CARPARK_FACILITY_ID to override.");
+        }
+
+        // Single-facility response
+        return buildInfo(root, extractName(root));
+    }
+
+    private ParkingInfo buildInfo(JsonNode node, String name) {
         ParkingInfo info = new ParkingInfo();
         info.setDataAvailable(true);
+        info.setFacilityName(name != null ? name : "Cherrybrook Station");
 
-        // Handle both possible API response structures
-        if (root.has("spots_total")) {
-            info.setTotalSpots(root.get("spots_total").asInt());
-            info.setAvailableSpots(root.get("spots_available").asInt());
-        } else if (root.has("occupancy")) {
-            JsonNode occ = root.get("occupancy");
+        if (node.has("spots_total")) {
+            info.setTotalSpots(node.get("spots_total").asInt());
+            info.setAvailableSpots(node.get("spots_available").asInt());
+        } else if (node.has("occupancy")) {
+            JsonNode occ = node.get("occupancy");
             info.setTotalSpots(occ.has("total") ? occ.get("total").asInt() : 0);
             info.setAvailableSpots(occ.has("available") ? occ.get("available").asInt() : 0);
+        } else if (node.has("total") && node.has("available")) {
+            info.setTotalSpots(node.get("total").asInt());
+            info.setAvailableSpots(node.get("available").asInt());
         }
 
-        if (root.has("carpark_name")) {
-            info.setFacilityName(root.get("carpark_name").asText());
-        } else if (root.has("facility") && root.get("facility").has("name")) {
-            info.setFacilityName(root.get("facility").get("name").asText());
-        } else {
-            info.setFacilityName("Cherrybrook Station");
-        }
-
-        if (root.has("last_updated")) {
-            info.setLastUpdated(root.get("last_updated").asText());
-        } else if (root.has("time")) {
-            info.setLastUpdated(root.get("time").asText());
+        if (node.has("last_updated")) {
+            info.setLastUpdated(node.get("last_updated").asText());
+        } else if (node.has("time")) {
+            info.setLastUpdated(node.get("time").asText());
         }
 
         return info;
+    }
+
+    private String extractName(JsonNode node) {
+        if (node.has("carpark_name"))  return node.get("carpark_name").asText();
+        if (node.has("facility_name")) return node.get("facility_name").asText();
+        if (node.has("name"))          return node.get("name").asText();
+        if (node.has("facility") && node.get("facility").has("name"))
+            return node.get("facility").get("name").asText();
+        return null;
     }
 }

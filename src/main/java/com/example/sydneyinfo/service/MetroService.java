@@ -31,7 +31,7 @@ import java.util.Map;
 public class MetroService {
 
     private static final String ALERTS_URL =
-        "https://api.transport.nsw.gov.au/v2/gtfs/alerts/sydneymetro";
+        "https://api.transport.nsw.gov.au/v2/gtfs/alerts/metro";
 
     private static final Map<Integer, String> EFFECTS = new HashMap<>();
     private static final Map<Integer, String> CAUSES = new HashMap<>();

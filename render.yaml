@@ -9,8 +9,9 @@ services:
         value: 8080
       - key: TFNSW_API_KEY
         sync: false
+      # Leave blank to auto-discover Cherrybrook from the full facilities list
       - key: CARPARK_FACILITY_ID
-        value: MACs100034
+        value: ""
       - key: FUELCHECK_CLIENT_ID
         sync: false
       - key: FUELCHECK_CLIENT_SECRET
