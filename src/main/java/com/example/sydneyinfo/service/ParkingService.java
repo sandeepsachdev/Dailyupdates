@@ -12,8 +12,15 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
+/**
+ * Two-step lookup:
+ *  1. GET /v1/carpark           → {"33":"Park&Ride - Cherrybrook", ...}  find Cherrybrook's ID
+ *  2. GET /v1/carpark?facility=33 → {spots, occupancy.total, ...}         get live counts
+ */
 @Service
 public class ParkingService {
 
@@ -24,114 +31,106 @@ public class ParkingService {
     @Value("${app.tfnsw.api-key:}")
     private String apiKey;
 
-    // Optional override — leave blank to auto-discover Cherrybrook from the full list
+    // Optional hard-coded override (e.g. "33"). Leave blank to auto-discover.
     @Value("${app.tfnsw.carpark.facility-id:}")
-    private String facilityId;
+    private String facilityIdOverride;
 
     @Autowired
     private RestTemplate restTemplate;
 
     private final ObjectMapper mapper = new ObjectMapper();
 
-    // Holds the last raw JSON for the /debug/parking endpoint
-    private volatile String lastRawResponse = "No response yet";
-
     @Cacheable("parking")
     public ParkingInfo getParking() {
         if (apiKey == null || apiKey.isBlank()) {
             return ParkingInfo.error("Set the TFNSW_API_KEY environment variable to view parking data.");
         }
-
         try {
-            String json = fetchRaw();
-            lastRawResponse = json;
-            log.info("TfNSW carpark raw response: {}", json);
-            return parseParkingResponse(json);
+            String facilityId = facilityIdOverride != null && !facilityIdOverride.isBlank()
+                ? facilityIdOverride
+                : resolveCherrybrookId();
+
+            String json = fetch(CARPARK_URL + "?facility=" + facilityId);
+            log.info("TfNSW carpark facility {} response: {}", facilityId, json);
+            return parseOccupancy(json);
 
         } catch (Exception e) {
-            lastRawResponse = "Error: " + e.getMessage();
+            log.error("Parking fetch failed", e);
             return ParkingInfo.error("Could not fetch parking data: " + e.getMessage());
         }
     }
 
-    public String getRawResponse() {
-        if (apiKey == null || apiKey.isBlank()) return "TFNSW_API_KEY not set";
-        try {
-            // Always fetch fresh for debug — bypasses cache
-            return fetchRaw();
-        } catch (Exception e) {
-            return "Error: " + e.getMessage();
-        }
-    }
-
-    private String fetchRaw() {
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "apikey " + apiKey);
-        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
-
-        String url = (facilityId != null && !facilityId.isBlank())
-            ? CARPARK_URL + "?facility=" + facilityId
-            : CARPARK_URL;
-
-        return restTemplate.exchange(url, HttpMethod.GET, new HttpEntity<>(headers), String.class)
-            .getBody();
-    }
-
-    private ParkingInfo parseParkingResponse(String json) throws Exception {
+    /** Calls the list endpoint and returns the ID of the active Cherrybrook facility. */
+    private String resolveCherrybrookId() throws Exception {
+        String json = fetch(CARPARK_URL);
+        log.debug("TfNSW carpark list: {}", json);
         JsonNode root = mapper.readTree(json);
 
-        // All-facilities response is an array — search for Cherrybrook
-        if (root.isArray()) {
-            for (JsonNode node : root) {
-                String name = extractName(node);
-                if (name != null && name.toLowerCase().contains("cherrybrook")) {
-                    return buildInfo(node, name);
+        // Prefer the non-historical Cherrybrook entry
+        String fallback = null;
+        Iterator<Map.Entry<String, JsonNode>> fields = root.fields();
+        while (fields.hasNext()) {
+            Map.Entry<String, JsonNode> entry = fields.next();
+            String name = entry.getValue().asText();
+            if (name.toLowerCase().contains("cherrybrook")) {
+                if (!name.toLowerCase().contains("historical")) {
+                    return entry.getKey();  // "33" → live data
                 }
+                fallback = entry.getKey(); // "5"  → historical, keep as fallback
             }
-            return ParkingInfo.error("Cherrybrook not found in TfNSW car park list. "
-                + "Set CARPARK_FACILITY_ID to override.");
         }
-
-        // Single-facility response
-        return buildInfo(root, extractName(root));
+        if (fallback != null) return fallback;
+        throw new RuntimeException("Cherrybrook not found in TfNSW car park list");
     }
 
-    private ParkingInfo buildInfo(JsonNode node, String name) {
+    /** Parses a single-facility response: {spots, occupancy:{total,...}, MessageDate, ...} */
+    private ParkingInfo parseOccupancy(String json) throws Exception {
+        JsonNode node = mapper.readTree(json);
+
         ParkingInfo info = new ParkingInfo();
         info.setDataAvailable(true);
-        info.setFacilityName(name != null ? name : "Cherrybrook Station");
 
-        // TfNSW API: "spots" = total capacity, "occupancy.total" = occupied count
+        // Facility name
+        String name = node.has("facility_name") ? node.get("facility_name").asText()
+                    : node.has("carpark_name")   ? node.get("carpark_name").asText()
+                    : "Cherrybrook Car Park";
+        info.setFacilityName(name);
+
+        // Spots: "spots" = total capacity, "occupancy.total" = occupied
         if (node.has("spots") && node.has("occupancy")) {
-            int total = node.get("spots").asInt();
+            int total    = node.get("spots").asInt();
             int occupied = node.get("occupancy").get("total").asInt();
             info.setTotalSpots(total);
             info.setAvailableSpots(Math.max(0, total - occupied));
-        } else if (node.has("spots_total")) {
-            info.setTotalSpots(node.get("spots_total").asInt());
-            info.setAvailableSpots(node.get("spots_available").asInt());
         } else if (node.has("total") && node.has("available")) {
             info.setTotalSpots(node.get("total").asInt());
             info.setAvailableSpots(node.get("available").asInt());
         }
 
-        if (node.has("MessageDate")) {
-            info.setLastUpdated(node.get("MessageDate").asText());
-        } else if (node.has("last_updated")) {
-            info.setLastUpdated(node.get("last_updated").asText());
-        } else if (node.has("time")) {
-            info.setLastUpdated(node.get("time").asText());
-        }
+        // Timestamp
+        if (node.has("MessageDate"))  info.setLastUpdated(node.get("MessageDate").asText());
+        else if (node.has("time"))    info.setLastUpdated(node.get("time").asText());
 
         return info;
     }
 
-    private String extractName(JsonNode node) {
-        if (node.has("carpark_name"))  return node.get("carpark_name").asText();
-        if (node.has("facility_name")) return node.get("facility_name").asText();
-        if (node.has("name"))          return node.get("name").asText();
-        if (node.has("facility") && node.get("facility").has("name"))
-            return node.get("facility").get("name").asText();
-        return null;
+    private String fetch(String url) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "apikey " + apiKey);
+        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+        return restTemplate.exchange(url, HttpMethod.GET, new HttpEntity<>(headers), String.class)
+                           .getBody();
+    }
+
+    /** Raw single-facility response for /debug/parking */
+    public String getRawResponse() {
+        if (apiKey == null || apiKey.isBlank()) return "TFNSW_API_KEY not set";
+        try {
+            String id = facilityIdOverride != null && !facilityIdOverride.isBlank()
+                ? facilityIdOverride : resolveCherrybrookId();
+            return "facility_id=" + id + "\n\n" + fetch(CARPARK_URL + "?facility=" + id);
+        } catch (Exception e) {
+            return "Error: " + e.getMessage();
+        }
     }
 }
