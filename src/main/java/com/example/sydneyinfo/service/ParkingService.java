@@ -80,19 +80,23 @@ public class ParkingService {
         info.setDataAvailable(true);
         info.setFacilityName(name != null ? name : "Cherrybrook Station");
 
-        if (node.has("spots_total")) {
+        // TfNSW API: "spots" = total capacity, "occupancy.total" = occupied count
+        if (node.has("spots") && node.has("occupancy")) {
+            int total = node.get("spots").asInt();
+            int occupied = node.get("occupancy").get("total").asInt();
+            info.setTotalSpots(total);
+            info.setAvailableSpots(Math.max(0, total - occupied));
+        } else if (node.has("spots_total")) {
             info.setTotalSpots(node.get("spots_total").asInt());
             info.setAvailableSpots(node.get("spots_available").asInt());
-        } else if (node.has("occupancy")) {
-            JsonNode occ = node.get("occupancy");
-            info.setTotalSpots(occ.has("total") ? occ.get("total").asInt() : 0);
-            info.setAvailableSpots(occ.has("available") ? occ.get("available").asInt() : 0);
         } else if (node.has("total") && node.has("available")) {
             info.setTotalSpots(node.get("total").asInt());
             info.setAvailableSpots(node.get("available").asInt());
         }
 
-        if (node.has("last_updated")) {
+        if (node.has("MessageDate")) {
+            info.setLastUpdated(node.get("MessageDate").asText());
+        } else if (node.has("last_updated")) {
             info.setLastUpdated(node.get("last_updated").asText());
         } else if (node.has("time")) {
             info.setLastUpdated(node.get("time").asText());
