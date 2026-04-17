@@ -112,7 +112,8 @@ public class FuelService {
                 double price = p.has("price")        ? p.get("price").asDouble()    : 0;
                 if (price <= 0) continue;
 
-                if (!sydneyCodes.isEmpty() && sydneyCodes.contains(code) && byType.containsKey(type)) {
+                boolean inSydney = sydneyCodes.isEmpty() || sydneyCodes.contains(code);
+                if (inSydney && byType.containsKey(type)) {
                     byType.get(type).add(price);
                 }
                 if (cherryCodes.contains(code) && byType.containsKey(type)) {
