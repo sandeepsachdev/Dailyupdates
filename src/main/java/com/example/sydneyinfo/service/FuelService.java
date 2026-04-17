@@ -52,21 +52,43 @@ public class FuelService {
 
     private final ObjectMapper mapper = new ObjectMapper();
 
+    private HttpEntity<Void> buildRequest() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("requesttimestamp", LocalDateTime.now().format(TIMESTAMP_FMT));
+        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        return new HttpEntity<>(headers);
+    }
+
     @Cacheable("fuel")
     public FuelInfo getFuelPrices() {
         try {
-            HttpHeaders headers = new HttpHeaders();
-            headers.set("requesttimestamp", LocalDateTime.now().format(TIMESTAMP_FMT));
-            headers.setAccept(List.of(MediaType.APPLICATION_JSON));
-            headers.setContentType(MediaType.APPLICATION_JSON);
-
             ResponseEntity<String> response = restTemplate.exchange(
-                PRICES_URL, HttpMethod.GET, new HttpEntity<>(headers), String.class);
-
+                PRICES_URL, HttpMethod.GET, buildRequest(), String.class);
             return parseResponse(response.getBody());
-
         } catch (Exception e) {
             return FuelInfo.error("Could not fetch fuel prices: " + e.getMessage());
+        }
+    }
+
+    /** Returns first 200 station entries as JSON for debugging field names / lat-lon. */
+    public String getRawStations() {
+        try {
+            ResponseEntity<String> response = restTemplate.exchange(
+                PRICES_URL, HttpMethod.GET, buildRequest(), String.class);
+            JsonNode root = mapper.readTree(response.getBody());
+            JsonNode stations = root.get("stations");
+            if (stations == null) return "{\"error\":\"no stations node\"}";
+            // Return first 200 entries to keep the response manageable
+            List<JsonNode> sample = new ArrayList<>();
+            int i = 0;
+            for (JsonNode s : stations) {
+                if (i++ >= 200) break;
+                sample.add(s);
+            }
+            return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(sample);
+        } catch (Exception e) {
+            return "{\"error\":\"" + e.getMessage() + "\"}";
         }
     }
 

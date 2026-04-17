@@ -87,9 +87,9 @@
                                     </div>
                                     <div class="mb-1 text-muted">
                                         <div th:each="day,i : ${cherrybrookWeather.forecasts}" th:if="${i.index == 0}">
-                                            <span class="temp-max" th:text="'H: ' + ${day.maxTemp} + '°'"></span>
-                                            <span class="mx-1 text-muted">·</span>
                                             <span class="temp-min" th:text="'L: ' + ${day.minTemp} + '°'"></span>
+                                            <span class="mx-1 text-muted">·</span>
+                                            <span class="temp-max" th:text="'H: ' + ${day.maxTemp} + '°'"></span>
                                         </div>
                                     </div>
                                 </div>
@@ -101,9 +101,9 @@
                                             <div class="weather-icon" th:text="${day.weatherIcon}"></div>
                                             <div class="small mt-1" th:text="${day.weatherDescription}"></div>
                                             <div class="temp-range mt-2">
-                                                <span class="temp-max" th:text="${day.maxTemp} + '°'"></span>
-                                                <span class="text-muted mx-1">/</span>
                                                 <span class="temp-min" th:text="${day.minTemp} + '°'"></span>
+                                                <span class="text-muted mx-1">/</span>
+                                                <span class="temp-max" th:text="${day.maxTemp} + '°'"></span>
                                             </div>
                                             <div class="small text-info mt-1"
                                                  th:if="${day.precipitationProbability > 0}">
@@ -136,9 +136,9 @@
                                     </div>
                                     <div class="mb-1 text-muted">
                                         <div th:each="day,i : ${sydneyWeather.forecasts}" th:if="${i.index == 0}">
-                                            <span class="temp-max" th:text="'H: ' + ${day.maxTemp} + '°'"></span>
-                                            <span class="mx-1 text-muted">·</span>
                                             <span class="temp-min" th:text="'L: ' + ${day.minTemp} + '°'"></span>
+                                            <span class="mx-1 text-muted">·</span>
+                                            <span class="temp-max" th:text="'H: ' + ${day.maxTemp} + '°'"></span>
                                         </div>
                                     </div>
                                 </div>
@@ -150,9 +150,9 @@
                                             <div class="weather-icon" th:text="${day.weatherIcon}"></div>
                                             <div class="small mt-1" th:text="${day.weatherDescription}"></div>
                                             <div class="temp-range mt-2">
-                                                <span class="temp-max" th:text="${day.maxTemp} + '°'"></span>
-                                                <span class="text-muted mx-1">/</span>
                                                 <span class="temp-min" th:text="${day.minTemp} + '°'"></span>
+                                                <span class="text-muted mx-1">/</span>
+                                                <span class="temp-max" th:text="${day.maxTemp} + '°'"></span>
                                             </div>
                                             <div class="small text-info mt-1"
                                                  th:if="${day.precipitationProbability > 0}">

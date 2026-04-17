@@ -40,4 +40,11 @@ public class DashboardController {
     public String debugParking() {
         return parkingService.getRawResponse();
     }
+
+    /** First 200 fuel stations — visit /debug/fuel to check lat/lon field names */
+    @GetMapping("/debug/fuel")
+    @ResponseBody
+    public String debugFuel() {
+        return fuelService.getRawStations();
+    }
 }
