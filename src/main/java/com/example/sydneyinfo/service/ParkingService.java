@@ -3,6 +3,8 @@ package com.example.sydneyinfo.service;
 import com.example.sydneyinfo.model.ParkingInfo;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
@@ -15,6 +17,7 @@ import java.util.List;
 @Service
 public class ParkingService {
 
+    private static final Logger log = LoggerFactory.getLogger(ParkingService.class);
     private static final String CARPARK_URL =
         "https://api.transport.nsw.gov.au/v1/carpark";
 
@@ -30,6 +33,9 @@ public class ParkingService {
 
     private final ObjectMapper mapper = new ObjectMapper();
 
+    // Holds the last raw JSON for the /debug/parking endpoint
+    private volatile String lastRawResponse = "No response yet";
+
     @Cacheable("parking")
     public ParkingInfo getParking() {
         if (apiKey == null || apiKey.isBlank()) {
@@ -37,23 +43,38 @@ public class ParkingService {
         }
 
         try {
-            HttpHeaders headers = new HttpHeaders();
-            headers.set("Authorization", "apikey " + apiKey);
-            headers.setAccept(List.of(MediaType.APPLICATION_JSON));
-
-            // Use specific facility ID if provided, otherwise fetch all and search
-            String url = (facilityId != null && !facilityId.isBlank())
-                ? CARPARK_URL + "?facility=" + facilityId
-                : CARPARK_URL;
-
-            ResponseEntity<String> response = restTemplate.exchange(
-                url, HttpMethod.GET, new HttpEntity<>(headers), String.class);
-
-            return parseParkingResponse(response.getBody());
+            String json = fetchRaw();
+            lastRawResponse = json;
+            log.info("TfNSW carpark raw response: {}", json);
+            return parseParkingResponse(json);
 
         } catch (Exception e) {
+            lastRawResponse = "Error: " + e.getMessage();
             return ParkingInfo.error("Could not fetch parking data: " + e.getMessage());
         }
+    }
+
+    public String getRawResponse() {
+        if (apiKey == null || apiKey.isBlank()) return "TFNSW_API_KEY not set";
+        try {
+            // Always fetch fresh for debug — bypasses cache
+            return fetchRaw();
+        } catch (Exception e) {
+            return "Error: " + e.getMessage();
+        }
+    }
+
+    private String fetchRaw() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "apikey " + apiKey);
+        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+
+        String url = (facilityId != null && !facilityId.isBlank())
+            ? CARPARK_URL + "?facility=" + facilityId
+            : CARPARK_URL;
+
+        return restTemplate.exchange(url, HttpMethod.GET, new HttpEntity<>(headers), String.class)
+            .getBody();
     }
 
     private ParkingInfo parseParkingResponse(String json) throws Exception {

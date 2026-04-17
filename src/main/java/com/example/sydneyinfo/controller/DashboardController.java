@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -31,5 +32,12 @@ public class DashboardController {
         model.addAttribute("lastUpdated",
             ZonedDateTime.now(ZoneId.of("Australia/Sydney")).format(FORMATTER));
         return "dashboard";
+    }
+
+    /** Raw TfNSW API response — visit /debug/parking to diagnose field mapping issues */
+    @GetMapping("/debug/parking")
+    @ResponseBody
+    public String debugParking() {
+        return parkingService.getRawResponse();
     }
 }
