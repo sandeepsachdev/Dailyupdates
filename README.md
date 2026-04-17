@@ -4,10 +4,10 @@ A Spring Boot web app that shows a live dashboard for Cherrybrook / Sydney commu
 
 | Section | What it shows |
 |---|---|
+| **Weather Forecast** | Current temperature, today & tomorrow for Cherrybrook and Sydney CBD — min/max temp, condition, rain % |
 | **Cherrybrook Metro Car Park** | Live available vs total spaces, availability bar |
-| **Weather Forecast** | Today & tomorrow for Cherrybrook and Sydney CBD — temp range, condition, rain % |
 | **Sydney Metro Disruptions** | Active service alerts from the TfNSW GTFS-RT feed |
-| **Sydney Petrol Prices** | Average / min / max cents-per-litre for U91, E10, Diesel and premium fuels across Sydney |
+| **Sydney Petrol Prices** | Live prices at Ampol Foodary Cherrybrook + average / min / max cents-per-litre across Sydney metro |
 
 The page auto-refreshes every 5 minutes. Each section shows a helpful message when API credentials are not yet configured.
 
@@ -18,7 +18,7 @@ The page auto-refreshes every 5 minutes. Each section shows a helpful message wh
 - **Java 17 + Spring Boot 3.2** — web, Thymeleaf, cache (Caffeine)
 - **Open-Meteo** — free weather API (no key required)
 - **Transport for NSW Open Data API** — parking occupancy + GTFS-RT metro alerts
-- **NSW FuelCheck API** — real-time petrol prices (OAuth2 client credentials)
+- **NSW FuelCheck API** — real-time petrol prices (no key required)
 - **Bootstrap 5.3 + Bootstrap Icons** — responsive dashboard UI
 
 ---
@@ -51,15 +51,11 @@ The app calls the NSW FuelCheck API (`api.onegov.nsw.gov.au/FuelCheckApp/v1/fuel
 ## Running Locally
 
 ```bash
-# Minimum — weather works without any keys
+# Minimum — weather and fuel prices work without any keys
 ./mvnw spring-boot:run
 
 # With all features enabled
-TFNSW_API_KEY=xxx \
-FUELCHECK_CLIENT_ID=yyy \
-FUELCHECK_CLIENT_SECRET=zzz \
-FUELCHECK_API_KEY=www \
-./mvnw spring-boot:run
+TFNSW_API_KEY=xxx ./mvnw spring-boot:run
 ```
 
 Visit <http://localhost:8080>.
@@ -70,12 +66,7 @@ Visit <http://localhost:8080>.
 
 ```bash
 docker build -t sydney-info .
-docker run -p 8080:8080 \
-  -e TFNSW_API_KEY=xxx \
-  -e FUELCHECK_CLIENT_ID=yyy \
-  -e FUELCHECK_CLIENT_SECRET=zzz \
-  -e FUELCHECK_API_KEY=www \
-  sydney-info
+docker run -p 8080:8080 -e TFNSW_API_KEY=xxx sydney-info
 ```
 
 The Dockerfile uses a **multi-stage build** (Maven build → JRE runtime) keeping the image small.
@@ -89,11 +80,8 @@ A `render.yaml` is included for one-click deployment.
 1. Push this repo to GitHub
 2. In the [Render dashboard](https://render.com), click **New → Web Service** and connect your repo
 3. Render will detect the `Dockerfile` automatically
-4. Under **Environment**, add your secret keys (the `render.yaml` marks them as `sync: false` so they are never stored in source control):
+4. Under **Environment**, add your secret key (marked `sync: false` so it is never stored in source control):
    - `TFNSW_API_KEY`
-   - `FUELCHECK_CLIENT_ID`
-   - `FUELCHECK_CLIENT_SECRET`
-   - `FUELCHECK_API_KEY`
 5. Deploy — Render injects `PORT` automatically; Spring Boot picks it up via `server.port=${PORT:8080}`
 
 ---
@@ -106,7 +94,6 @@ A `render.yaml` is included for one-click deployment.
 | Metro alerts | 5 min | Near-real-time service info |
 | Weather | 30 min | Forecasts don't change minute-to-minute |
 | Fuel prices | 30 min | Prices updated a few times per day |
-| FuelCheck OAuth token | 50 min | Token expiry is ~60 min |
 
 ---
 
@@ -116,5 +103,15 @@ A `render.yaml` is included for one-click deployment.
 |---|---|---|---|
 | `PORT` | No | `8080` | HTTP port (auto-set by Render) |
 | `TFNSW_API_KEY` | Yes* | — | TfNSW Open Data API key |
-| `CARPARK_FACILITY_ID` | No | `MACs100034` | TfNSW car park facility ID |
-\* The app runs without `TFNSW_API_KEY` but will show a configuration prompt for parking and metro sections. Fuel prices require no credentials.
+| `CARPARK_FACILITY_ID` | No | auto | TfNSW car park facility ID (leave blank to auto-discover Cherrybrook) |
+
+\* The app runs without `TFNSW_API_KEY` but will show a configuration prompt for parking and metro sections. Weather and fuel prices require no credentials.
+
+---
+
+## Debug Endpoints
+
+| Path | Purpose |
+|---|---|
+| `/debug/parking` | Raw TfNSW car park API response |
+| `/debug/fuel` | First 200 stations from FuelCheck API (useful for verifying field names / coordinates) |
