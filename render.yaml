@@ -12,10 +12,4 @@ services:
       # Leave blank to auto-discover Cherrybrook from the full facilities list
       - key: CARPARK_FACILITY_ID
         value: ""
-      - key: FUELCHECK_CLIENT_ID
-        sync: false
-      - key: FUELCHECK_CLIENT_SECRET
-        sync: false
-      - key: FUELCHECK_API_KEY
-        sync: false
     healthCheckPath: /

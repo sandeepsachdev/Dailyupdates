@@ -42,18 +42,9 @@ CARPARK_FACILITY_ID=<numeric id from TfNSW portal>
 
 ### 2. NSW FuelCheck
 
-Used for **petrol prices**.
+Used for **petrol prices** — **no API key or registration required**.
 
-1. Register at <https://api.onegov.nsw.gov.au>
-2. Create an application — you will receive a **Client ID**, **Client Secret** and **API Key**
-3. Set these environment variables:
-   ```
-   FUELCHECK_CLIENT_ID=<client id>
-   FUELCHECK_CLIENT_SECRET=<client secret>
-   FUELCHECK_API_KEY=<api key>
-   ```
-
-The app uses the OAuth2 client-credentials flow to obtain a Bearer token automatically (cached for 50 minutes).
+The app calls the NSW FuelCheck API (`api.onegov.nsw.gov.au/FuelCheckApp/v1/fuel/prices`) using only a `requesttimestamp` header. Prices are cached for 30 minutes.
 
 ---
 
@@ -126,8 +117,4 @@ A `render.yaml` is included for one-click deployment.
 | `PORT` | No | `8080` | HTTP port (auto-set by Render) |
 | `TFNSW_API_KEY` | Yes* | — | TfNSW Open Data API key |
 | `CARPARK_FACILITY_ID` | No | `MACs100034` | TfNSW car park facility ID |
-| `FUELCHECK_CLIENT_ID` | Yes* | — | NSW FuelCheck OAuth2 client ID |
-| `FUELCHECK_CLIENT_SECRET` | Yes* | — | NSW FuelCheck OAuth2 client secret |
-| `FUELCHECK_API_KEY` | Yes* | — | NSW FuelCheck API key |
-
-\* The app runs without these keys but will show a configuration prompt for the affected section.
+\* The app runs without `TFNSW_API_KEY` but will show a configuration prompt for parking and metro sections. Fuel prices require no credentials.
