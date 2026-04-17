@@ -17,6 +17,7 @@ import java.util.List;
 public class WeatherService {
 
     private static final String BASE_URL = "https://api.open-meteo.com/v1/forecast";
+    private static final String CURRENT_VARS = "temperature_2m,weathercode";
     private static final String[] DAILY_VARS =
         "temperature_2m_max,temperature_2m_min,weathercode,precipitation_probability_max".split(",");
 
@@ -40,6 +41,7 @@ public class WeatherService {
             String url = UriComponentsBuilder.fromHttpUrl(BASE_URL)
                 .queryParam("latitude", lat)
                 .queryParam("longitude", lon)
+                .queryParam("current", CURRENT_VARS)
                 .queryParam("daily", String.join(",", DAILY_VARS))
                 .queryParam("timezone", "Australia/Sydney")
                 .queryParam("forecast_days", 2)
@@ -47,6 +49,7 @@ public class WeatherService {
 
             String json = restTemplate.getForObject(url, String.class);
             JsonNode root = mapper.readTree(json);
+            JsonNode current = root.get("current");
             JsonNode daily = root.get("daily");
 
             JsonNode times = daily.get("time");
@@ -74,6 +77,10 @@ public class WeatherService {
             weather.setLocationName(locationName);
             weather.setForecasts(forecasts);
             weather.setDataAvailable(true);
+            if (current != null) {
+                weather.setCurrentTemp(Math.round(current.get("temperature_2m").asDouble() * 10.0) / 10.0);
+                weather.setCurrentWeatherCode(current.get("weathercode").asInt());
+            }
             return weather;
 
         } catch (Exception e) {
