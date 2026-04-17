@@ -185,7 +185,10 @@ public class FuelService {
                 lfp.add(lp);
             }
             ls.setPrices(lfp);
-            localStations.add(ls);
+            String nameUpper = ls.getName().toUpperCase();
+            if (nameUpper.contains("CHERRYBROOK")) {
+                localStations.add(ls);
+            }
         }
 
         FuelInfo info = new FuelInfo();
