@@ -4,6 +4,7 @@ import java.util.List;
 
 public class FuelInfo {
     private List<FuelPrice> prices;
+    private List<LocalFuelStation> localStations;
     private boolean dataAvailable;
     private String errorMessage;
     private String region;
@@ -17,6 +18,8 @@ public class FuelInfo {
 
     public List<FuelPrice> getPrices() { return prices; }
     public void setPrices(List<FuelPrice> prices) { this.prices = prices; }
+    public List<LocalFuelStation> getLocalStations() { return localStations; }
+    public void setLocalStations(List<LocalFuelStation> localStations) { this.localStations = localStations; }
     public boolean isDataAvailable() { return dataAvailable; }
     public void setDataAvailable(boolean dataAvailable) { this.dataAvailable = dataAvailable; }
     public String getErrorMessage() { return errorMessage; }

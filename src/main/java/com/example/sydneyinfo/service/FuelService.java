@@ -2,6 +2,8 @@ package com.example.sydneyinfo.service;
 
 import com.example.sydneyinfo.model.FuelInfo;
 import com.example.sydneyinfo.model.FuelPrice;
+import com.example.sydneyinfo.model.LocalFuelPrice;
+import com.example.sydneyinfo.model.LocalFuelStation;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +15,7 @@ import org.springframework.web.client.RestTemplate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.Collections;
 
 /**
  * NSW FuelCheck API — no OAuth or API key required.
@@ -31,6 +34,10 @@ public class FuelService {
     // Bounding box for Greater Sydney metro
     private static final double LAT_MIN = -34.3, LAT_MAX = -33.2;
     private static final double LON_MIN = 150.3, LON_MAX = 151.8;
+
+    // Cherrybrook ~2 km bounding box (centre: -33.733, 151.050)
+    private static final double CHERRY_LAT_MIN = -33.753, CHERRY_LAT_MAX = -33.713;
+    private static final double CHERRY_LON_MIN = 151.025, CHERRY_LON_MAX = 151.075;
 
     private static final Map<String, String> FUEL_LABELS = Map.of(
         "U91", "Unleaded 91",
@@ -66,33 +73,51 @@ public class FuelService {
     private FuelInfo parseResponse(String json) throws Exception {
         JsonNode root = mapper.readTree(json);
 
-        // Build a set of station codes that are within Greater Sydney
         Set<String> sydneyCodes = new HashSet<>();
+        Set<String> cherryCodes = new HashSet<>();
+
+        // station metadata keyed by code
+        Map<String, JsonNode> stationMeta = new HashMap<>();
+
         JsonNode stations = root.get("stations");
         if (stations != null) {
             for (JsonNode s : stations) {
                 double lat = s.has("latitude")  ? s.get("latitude").asDouble()  : 0;
                 double lon = s.has("longitude") ? s.get("longitude").asDouble() : 0;
+                String code = s.has("code") ? s.get("code").asText() : "";
+                if (code.isEmpty()) continue;
+                stationMeta.put(code, s);
                 if (lat >= LAT_MIN && lat <= LAT_MAX && lon >= LON_MIN && lon <= LON_MAX) {
-                    // code field identifies the station in the prices list
-                    if (s.has("code")) sydneyCodes.add(s.get("code").asText());
+                    sydneyCodes.add(code);
+                }
+                if (lat >= CHERRY_LAT_MIN && lat <= CHERRY_LAT_MAX
+                        && lon >= CHERRY_LON_MIN && lon <= CHERRY_LON_MAX) {
+                    cherryCodes.add(code);
                 }
             }
         }
 
-        // Aggregate prices across Sydney stations
+        // Aggregate prices across Sydney stations; also collect per-station prices for Cherrybrook
         Map<String, List<Double>> byType = new LinkedHashMap<>();
         for (String t : List.of("U91", "E10", "DL", "U95", "U98")) byType.put(t, new ArrayList<>());
+
+        // stationCode → (fuelType → price)
+        Map<String, Map<String, Double>> cherryPrices = new LinkedHashMap<>();
 
         JsonNode prices = root.get("prices");
         if (prices != null) {
             for (JsonNode p : prices) {
-                String code = p.has("stationcode") ? p.get("stationcode").asText() : "";
-                if (!sydneyCodes.isEmpty() && !sydneyCodes.contains(code)) continue;
+                String code  = p.has("stationcode") ? p.get("stationcode").asText() : "";
+                String type  = p.has("fueltype")    ? p.get("fueltype").asText()    : "";
+                double price = p.has("price")        ? p.get("price").asDouble()    : 0;
+                if (price <= 0) continue;
 
-                String type  = p.has("fueltype") ? p.get("fueltype").asText() : "";
-                double price = p.has("price")    ? p.get("price").asDouble()  : 0;
-                if (byType.containsKey(type) && price > 0) byType.get(type).add(price);
+                if (!sydneyCodes.isEmpty() && sydneyCodes.contains(code) && byType.containsKey(type)) {
+                    byType.get(type).add(price);
+                }
+                if (cherryCodes.contains(code) && byType.containsKey(type)) {
+                    cherryPrices.computeIfAbsent(code, k -> new LinkedHashMap<>()).put(type, price);
+                }
             }
         }
 
@@ -111,9 +136,36 @@ public class FuelService {
             fuelPrices.add(fp);
         }
 
+        // Build local station list sorted by code for stability
+        List<LocalFuelStation> localStations = new ArrayList<>();
+        List<String> sortedCherryCodes = new ArrayList<>(cherryPrices.keySet());
+        Collections.sort(sortedCherryCodes);
+        for (String code : sortedCherryCodes) {
+            JsonNode meta = stationMeta.get(code);
+            LocalFuelStation ls = new LocalFuelStation();
+            ls.setStationCode(code);
+            ls.setName(meta != null && meta.has("name")    ? meta.get("name").asText()    : code);
+            ls.setBrand(meta != null && meta.has("brand")  ? meta.get("brand").asText()   : "");
+            ls.setAddress(meta != null && meta.has("address") ? meta.get("address").asText() : "");
+
+            Map<String, Double> stPrices = cherryPrices.get(code);
+            List<LocalFuelPrice> lfp = new ArrayList<>();
+            for (String t : List.of("U91", "E10", "DL", "U95", "U98")) {
+                if (!stPrices.containsKey(t)) continue;
+                LocalFuelPrice lp = new LocalFuelPrice();
+                lp.setFuelType(t);
+                lp.setFuelTypeLabel(FUEL_LABELS.getOrDefault(t, t));
+                lp.setPrice(stPrices.get(t));
+                lfp.add(lp);
+            }
+            ls.setPrices(lfp);
+            localStations.add(ls);
+        }
+
         FuelInfo info = new FuelInfo();
         info.setDataAvailable(true);
         info.setPrices(fuelPrices);
+        info.setLocalStations(localStations);
         info.setRegion("Sydney Metro");
         return info;
     }

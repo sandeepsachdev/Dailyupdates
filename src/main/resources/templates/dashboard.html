@@ -287,6 +287,37 @@
                     </div>
 
                     <div th:if="${fuelInfo.dataAvailable and !#lists.isEmpty(fuelInfo.prices)}">
+
+                        <!-- Cherrybrook local stations -->
+                        <div th:if="${fuelInfo.localStations != null and !#lists.isEmpty(fuelInfo.localStations)}"
+                             class="mb-4">
+                            <h6 class="fw-semibold mb-2">
+                                <i class="bi bi-geo-alt-fill text-danger me-1"></i>Near Cherrybrook
+                            </h6>
+                            <div th:each="station : ${fuelInfo.localStations}" class="border rounded-3 p-3 mb-2">
+                                <div class="d-flex align-items-baseline gap-2 mb-2">
+                                    <span class="fw-semibold" th:text="${station.name}"></span>
+                                    <span class="badge bg-secondary small" th:if="${!station.brand.isEmpty()}"
+                                          th:text="${station.brand}"></span>
+                                    <span class="text-muted small" th:if="${!station.address.isEmpty()}"
+                                          th:text="${station.address}"></span>
+                                </div>
+                                <div class="row g-2">
+                                    <div class="col-auto" th:each="lp : ${station.prices}">
+                                        <div class="border rounded-2 px-2 py-1 text-center" style="min-width:80px">
+                                            <div class="small text-muted text-uppercase fw-semibold"
+                                                 th:text="${lp.fuelTypeLabel}"></div>
+                                            <div class="fuel-price" th:text="${lp.formatted} + '¢'"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sydney metro averages -->
+                        <h6 class="fw-semibold mb-2">
+                            <i class="bi bi-bar-chart-fill text-secondary me-1"></i>Sydney Metro Averages
+                        </h6>
                         <div class="row g-3">
                             <div class="col-6 col-md-4 col-lg-3"
                                  th:each="fp : ${fuelInfo.prices}">
