@@ -104,11 +104,14 @@ public class FuelService {
         JsonNode stations = root.get("stations");
         if (stations != null) {
             for (JsonNode s : stations) {
-                double lat = s.has("latitude")  ? s.get("latitude").asDouble()  : 0;
-                double lon = s.has("longitude") ? s.get("longitude").asDouble() : 0;
                 String code = s.has("code") ? s.get("code").asText() : "";
                 if (code.isEmpty()) continue;
                 stationMeta.put(code, s);
+
+                JsonNode loc = s.get("location");
+                double lat = (loc != null && loc.has("latitude"))  ? loc.get("latitude").asDouble()  : 0;
+                double lon = (loc != null && loc.has("longitude")) ? loc.get("longitude").asDouble() : 0;
+
                 if (lat >= LAT_MIN && lat <= LAT_MAX && lon >= LON_MIN && lon <= LON_MAX) {
                     sydneyCodes.add(code);
                 }
