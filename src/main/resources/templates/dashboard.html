@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sydney Daily Info</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        body { background-color: #f0f2f5; }
+        .navbar-brand { font-weight: 700; letter-spacing: 0.5px; }
+        .card { border: none; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .card-header { border-radius: 12px 12px 0 0 !important; font-weight: 600; }
+        .section-title { font-size: 1rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        .parking-bar .progress { height: 20px; border-radius: 8px; }
+        .spot-count { font-size: 2.5rem; font-weight: 700; line-height: 1; }
+        .spot-label { font-size: 0.85rem; color: #6c757d; }
+        .weather-card { text-align: center; padding: 1rem; background: #fff; border-radius: 10px; }
+        .weather-icon { font-size: 2.5rem; }
+        .temp-range { font-size: 1.1rem; font-weight: 600; }
+        .temp-max { color: #dc3545; }
+        .temp-min { color: #0d6efd; }
+        .alert-item { border-left: 4px solid; padding: 0.75rem 1rem; margin-bottom: 0.5rem;
+                       background: #fff; border-radius: 0 8px 8px 0; }
+        .alert-item.severity-danger { border-color: #dc3545; background: #fff5f5; }
+        .alert-item.severity-warning { border-color: #ffc107; background: #fffbf0; }
+        .alert-item.severity-info { border-color: #0dcaf0; background: #f0fbff; }
+        .fuel-table th { font-size: 0.85rem; font-weight: 600; color: #6c757d; text-transform: uppercase; }
+        .fuel-price { font-size: 1.3rem; font-weight: 700; }
+        .fuel-range { font-size: 0.8rem; color: #6c757d; }
+        .last-updated { font-size: 0.8rem; color: #6c757d; }
+        @media (max-width: 768px) {
+            .spot-count { font-size: 2rem; }
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-dark bg-dark mb-4">
+    <div class="container">
+        <span class="navbar-brand">
+            <i class="bi bi-geo-alt-fill me-2"></i>Sydney Daily Info
+        </span>
+        <div class="d-flex align-items-center gap-3">
+            <span class="last-updated text-secondary" th:text="'Updated: ' + ${lastUpdated}"></span>
+            <a href="/" class="btn btn-sm btn-outline-light">
+                <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+            </a>
+        </div>
+    </div>
+</nav>
+
+<div class="container pb-5">
+    <div class="row g-4">
+
+        <!-- PARKING CARD -->
+        <div class="col-12 col-lg-6">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white d-flex align-items-center gap-2">
+                    <i class="bi bi-p-circle-fill fs-5"></i>
+                    <span class="section-title">Cherrybrook Metro Car Park</span>
+                </div>
+                <div class="card-body">
+
+                    <!-- No API key -->
+                    <div th:if="${!parking.dataAvailable}" class="text-center py-3">
+                        <i class="bi bi-exclamation-circle fs-1 text-warning"></i>
+                        <p class="mt-2 text-muted" th:text="${parking.errorMessage}"></p>
+                    </div>
+
+                    <!-- Data available -->
+                    <div th:if="${parking.dataAvailable}">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <div class="spot-count"
+                                     th:classappend="${'text-' + parking.statusClass}"
+                                     th:text="${parking.availableSpots}">350</div>
+                                <div class="spot-label">spaces available</div>
+                            </div>
+                            <div class="text-end">
+                                <div class="spot-count text-secondary" th:text="${parking.totalSpots}">800</div>
+                                <div class="spot-label">total spaces</div>
+                            </div>
+                        </div>
+
+                        <div class="parking-bar mb-3">
+                            <div class="progress">
+                                <div class="progress-bar"
+                                     th:classappend="${'bg-' + parking.statusClass}"
+                                     role="progressbar"
+                                     th:style="'width: ' + ${parking.availabilityPercent} + '%'"
+                                     th:attr="aria-valuenow=${parking.availableSpots},
+                                              aria-valuemin=0,
+                                              aria-valuemax=${parking.totalSpots}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="badge rounded-pill"
+                                  th:classappend="${'bg-' + parking.statusClass}"
+                                  th:text="${parking.statusText}">Available</span>
+                            <small class="text-muted"
+                                   th:if="${parking.lastUpdated != null}"
+                                   th:text="'As of ' + ${parking.lastUpdated}"></small>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- METRO DISRUPTIONS CARD -->
+        <div class="col-12 col-lg-6">
+            <div class="card h-100">
+                <div class="card-header bg-dark text-white d-flex align-items-center gap-2">
+                    <i class="bi bi-train-front-fill fs-5"></i>
+                    <span class="section-title">Sydney Metro Disruptions</span>
+                </div>
+                <div class="card-body">
+
+                    <div th:if="${#lists.isEmpty(metroAlerts)}" class="text-center py-3">
+                        <i class="bi bi-check-circle-fill fs-1 text-success"></i>
+                        <p class="mt-2 text-muted">No current disruptions reported.</p>
+                    </div>
+
+                    <div th:if="${!#lists.isEmpty(metroAlerts)}">
+                        <div th:each="alert : ${metroAlerts}"
+                             class="alert-item"
+                             th:classappend="${'severity-' + alert.severityClass}">
+                            <div class="d-flex align-items-start gap-2">
+                                <i class="bi bi-exclamation-triangle-fill mt-1"
+                                   th:classappend="${'text-' + alert.severityClass}"></i>
+                                <div>
+                                    <div class="fw-semibold" th:text="${alert.header}"></div>
+                                    <div class="text-muted small mt-1"
+                                         th:if="${alert.description != null and !alert.description.isEmpty()}"
+                                         th:text="${alert.description}"></div>
+                                    <div class="mt-1" th:if="${alert.effect != null and alert.effect != 'UNKNOWN_EFFECT'}">
+                                        <span class="badge bg-secondary text-uppercase small"
+                                              th:text="${alert.effect.replace('_', ' ')}"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- WEATHER CARD -->
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-info text-white d-flex align-items-center gap-2">
+                    <i class="bi bi-cloud-sun-fill fs-5"></i>
+                    <span class="section-title">Weather Forecast</span>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+
+                        <!-- Cherrybrook -->
+                        <div class="col-12 col-md-6">
+                            <h6 class="fw-bold mb-3">
+                                <i class="bi bi-geo-alt me-1 text-primary"></i>
+                                Cherrybrook
+                            </h6>
+
+                            <div th:if="${!cherrybrookWeather.dataAvailable}" class="text-muted small">
+                                <i class="bi bi-exclamation-circle"></i>
+                                <span th:text="${cherrybrookWeather.errorMessage}"></span>
+                            </div>
+
+                            <div th:if="${cherrybrookWeather.dataAvailable}" class="row g-2">
+                                <div class="col-6" th:each="day : ${cherrybrookWeather.forecasts}">
+                                    <div class="weather-card border">
+                                        <div class="fw-semibold text-muted small mb-1" th:text="${day.label}"></div>
+                                        <div class="weather-icon" th:text="${day.weatherIcon}"></div>
+                                        <div class="small mt-1" th:text="${day.weatherDescription}"></div>
+                                        <div class="temp-range mt-2">
+                                            <span class="temp-max" th:text="${day.maxTemp} + '°'"></span>
+                                            <span class="text-muted mx-1">/</span>
+                                            <span class="temp-min" th:text="${day.minTemp} + '°'"></span>
+                                        </div>
+                                        <div class="small text-info mt-1"
+                                             th:if="${day.precipitationProbability > 0}">
+                                            <i class="bi bi-droplet me-1"></i>
+                                            <span th:text="${day.precipitationProbability} + '% rain'"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sydney CBD -->
+                        <div class="col-12 col-md-6">
+                            <h6 class="fw-bold mb-3">
+                                <i class="bi bi-buildings me-1 text-primary"></i>
+                                Sydney CBD
+                            </h6>
+
+                            <div th:if="${!sydneyWeather.dataAvailable}" class="text-muted small">
+                                <i class="bi bi-exclamation-circle"></i>
+                                <span th:text="${sydneyWeather.errorMessage}"></span>
+                            </div>
+
+                            <div th:if="${sydneyWeather.dataAvailable}" class="row g-2">
+                                <div class="col-6" th:each="day : ${sydneyWeather.forecasts}">
+                                    <div class="weather-card border">
+                                        <div class="fw-semibold text-muted small mb-1" th:text="${day.label}"></div>
+                                        <div class="weather-icon" th:text="${day.weatherIcon}"></div>
+                                        <div class="small mt-1" th:text="${day.weatherDescription}"></div>
+                                        <div class="temp-range mt-2">
+                                            <span class="temp-max" th:text="${day.maxTemp} + '°'"></span>
+                                            <span class="text-muted mx-1">/</span>
+                                            <span class="temp-min" th:text="${day.minTemp} + '°'"></span>
+                                        </div>
+                                        <div class="small text-info mt-1"
+                                             th:if="${day.precipitationProbability > 0}">
+                                            <i class="bi bi-droplet me-1"></i>
+                                            <span th:text="${day.precipitationProbability} + '% rain'"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FUEL PRICES CARD -->
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-warning text-dark d-flex align-items-center gap-2">
+                    <i class="bi bi-fuel-pump-fill fs-5"></i>
+                    <span class="section-title">Petrol Prices — Sydney</span>
+                    <span class="ms-auto badge bg-dark"
+                          th:if="${fuelInfo.dataAvailable}"
+                          th:text="${fuelInfo.region}"></span>
+                </div>
+                <div class="card-body">
+
+                    <div th:if="${!fuelInfo.dataAvailable}" class="text-center py-3">
+                        <i class="bi bi-exclamation-circle fs-1 text-warning"></i>
+                        <p class="mt-2 text-muted" th:text="${fuelInfo.errorMessage}"></p>
+                    </div>
+
+                    <div th:if="${fuelInfo.dataAvailable and #lists.isEmpty(fuelInfo.prices)}"
+                         class="text-muted text-center py-3">
+                        No price data available at this time.
+                    </div>
+
+                    <div th:if="${fuelInfo.dataAvailable and !#lists.isEmpty(fuelInfo.prices)}">
+                        <div class="row g-3">
+                            <div class="col-6 col-md-4 col-lg-3"
+                                 th:each="fp : ${fuelInfo.prices}">
+                                <div class="border rounded-3 p-3 text-center h-100">
+                                    <div class="small fw-semibold text-muted text-uppercase"
+                                         th:text="${fp.fuelTypeLabel}"></div>
+                                    <div class="fuel-price my-1"
+                                         th:text="${fp.formattedAverage} + '¢'"></div>
+                                    <div class="fuel-range">
+                                        <span th:text="${fp.formattedMin} + '¢'"></span>
+                                        <span class="text-muted"> – </span>
+                                        <span th:text="${fp.formattedMax} + '¢'"></span>
+                                    </div>
+                                    <div class="small text-muted mt-1">
+                                        avg of <span th:text="${fp.stationCount}"></span> stations
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-muted small mt-3 mb-0">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Prices in cents per litre. Average, min and max across Sydney metro stations.
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+    </div><!-- row -->
+</div><!-- container -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Auto-refresh every 5 minutes
+    setTimeout(function() { window.location.reload(); }, 5 * 60 * 1000);
+</script>
+</body>
+</html>

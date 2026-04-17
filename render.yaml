@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: sydney-info
+    env: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    envVars:
+      - key: PORT
+        value: 8080
+      - key: TFNSW_API_KEY
+        sync: false
+      - key: CARPARK_FACILITY_ID
+        value: MACs100034
+      - key: FUELCHECK_CLIENT_ID
+        sync: false
+      - key: FUELCHECK_CLIENT_SECRET
+        sync: false
+      - key: FUELCHECK_API_KEY
+        sync: false
+    healthCheckPath: /
