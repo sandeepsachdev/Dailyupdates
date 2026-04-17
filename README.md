@@ -115,3 +115,17 @@ A `render.yaml` is included for one-click deployment.
 |---|---|
 | `/debug/parking` | Raw TfNSW car park API response |
 | `/debug/fuel` | First 200 stations from FuelCheck API (useful for verifying field names / coordinates) |
+
+---
+
+## How This App Was Built
+
+This app was generated using [Claude Code](https://claude.ai/code) via the following prompts:
+
+1. *"Create a Java Spring Boot app which can easily be deployed to Render with a Dockerfile. The app should show the current parking at Cherrybrook Metro car park. It should also show the weather forecast today and tomorrow for Cherrybrook and Sydney CBD. The forecast should include temperature range. Also show any disruptions to the Sydney Metro line. Finally it should show the current price of petrol in Sydney."*
+
+2. *"Show current temperatures in the weather section. Move the weather section up to the top."*
+
+3. *"Can you also display the petrol price at the Cherrybrook station."*
+
+4. *"Only show me the price for Ampol Foodary Cherrybrook."*
