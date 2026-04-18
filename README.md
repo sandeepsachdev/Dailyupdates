@@ -86,6 +86,46 @@ A `render.yaml` is included for one-click deployment.
 
 ---
 
+## Deploying to Fly.io
+
+A `fly.toml` is included. The app is configured to deploy to the `syd` (Sydney) region.
+
+### First-time setup
+
+```bash
+# Install flyctl if you haven't already
+brew install flyctl        # macOS
+# or: curl -L https://fly.io/install.sh | sh
+
+# Authenticate
+fly auth login
+
+# Launch — Fly will detect fly.toml and the Dockerfile
+fly launch --no-deploy
+
+# Set your TfNSW API key as a secret
+fly secrets set TFNSW_API_KEY=xxx
+
+# Deploy
+fly deploy
+```
+
+### Subsequent deploys
+
+```bash
+fly deploy
+```
+
+### Useful commands
+
+```bash
+fly logs          # tail live logs
+fly status        # machine health
+fly secrets set TFNSW_API_KEY=xxx   # update secret
+```
+
+---
+
 ## Caching
 
 | Cache | TTL | Reason |
