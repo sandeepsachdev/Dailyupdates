@@ -31,6 +31,8 @@ public class AppConfig {
                 Caffeine.newBuilder().expireAfterWrite(5, TimeUnit.MINUTES).build()),
             new CaffeineCache("fuel",
                 Caffeine.newBuilder().expireAfterWrite(30, TimeUnit.MINUTES).build()),
+            new CaffeineCache("events",
+                Caffeine.newBuilder().expireAfterWrite(60, TimeUnit.MINUTES).build()),
             new CaffeineCache("fuelToken",
                 Caffeine.newBuilder().expireAfterWrite(50, TimeUnit.MINUTES).build())
         ));

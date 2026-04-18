@@ -19,6 +19,7 @@ public class DashboardController {
     @Autowired private WeatherService weatherService;
     @Autowired private MetroService metroService;
     @Autowired private FuelService fuelService;
+    @Autowired private EventService eventService;
 
     @Value("${app.google.maps-api-key:}")
     private String googleMapsApiKey;
@@ -34,6 +35,7 @@ public class DashboardController {
         model.addAttribute("metroAlerts", metroService.getAlerts());
         model.addAttribute("fuelInfo", fuelService.getFuelPrices());
         model.addAttribute("googleMapsApiKey", googleMapsApiKey);
+        model.addAttribute("eventInfo", eventService.getEvents());
         model.addAttribute("lastUpdated",
             ZonedDateTime.now(ZoneId.of("Australia/Sydney")).format(FORMATTER));
         return "dashboard";
