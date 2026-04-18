@@ -380,6 +380,7 @@
         let markers = [];
         let youMarker = null;
         let currentType = 'restaurant';
+        let currentCentre = CHERRYBROOK;
 
         function setLocationLabel(text) {
             document.getElementById('map-location-label').textContent = text;
@@ -428,6 +429,7 @@
         }
 
         function useLocation(centre, label) {
+            currentCentre = centre;
             map.setCenter(centre);
             if (youMarker) youMarker.setMap(null);
             youMarker = new google.maps.Marker({
@@ -460,7 +462,7 @@
                 btn.classList.remove('btn-outline-success');
                 btn.classList.add('btn-success');
                 currentType = btn.dataset.type;
-                if (youMarker) searchPlaces(youMarker.getPosition(), currentType);
+                searchPlaces(currentCentre, currentType);
             });
         });
     }
