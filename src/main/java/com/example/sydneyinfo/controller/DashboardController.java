@@ -47,4 +47,11 @@ public class DashboardController {
     public String debugFuel() {
         return fuelService.getRawStations();
     }
+
+    /** Lightweight health check for Sliplane / container orchestrators */
+    @GetMapping("/health")
+    @ResponseBody
+    public String health() {
+        return "ok";
+    }
 }
