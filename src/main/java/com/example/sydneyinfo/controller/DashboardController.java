@@ -2,6 +2,7 @@ package com.example.sydneyinfo.controller;
 
 import com.example.sydneyinfo.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,6 +20,9 @@ public class DashboardController {
     @Autowired private MetroService metroService;
     @Autowired private FuelService fuelService;
 
+    @Value("${app.google.maps-api-key:}")
+    private String googleMapsApiKey;
+
     private static final DateTimeFormatter FORMATTER =
         DateTimeFormatter.ofPattern("d MMM yyyy, h:mm a");
 
@@ -29,6 +33,7 @@ public class DashboardController {
         model.addAttribute("sydneyWeather", weatherService.getSydneyWeather());
         model.addAttribute("metroAlerts", metroService.getAlerts());
         model.addAttribute("fuelInfo", fuelService.getFuelPrices());
+        model.addAttribute("googleMapsApiKey", googleMapsApiKey);
         model.addAttribute("lastUpdated",
             ZonedDateTime.now(ZoneId.of("Australia/Sydney")).format(FORMATTER));
         return "dashboard";

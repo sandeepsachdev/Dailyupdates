@@ -8,6 +8,7 @@ A Spring Boot web app that shows a live dashboard for Cherrybrook / Sydney commu
 | **Cherrybrook Metro Car Park** | Live available vs total spaces, availability bar |
 | **Sydney Metro Disruptions** | Active service alerts from the TfNSW GTFS-RT feed |
 | **Sydney Petrol Prices** | Live prices at Ampol Foodary Cherrybrook + average / min / max cents-per-litre across Sydney metro |
+| **Nearby Places** | Google Maps with filterable nearby restaurants, cafes, supermarkets, pharmacies, parks and gyms |
 
 The page auto-refreshes every 5 minutes. Each section shows a helpful message when API credentials are not yet configured.
 
@@ -25,7 +26,18 @@ The page auto-refreshes every 5 minutes. Each section shows a helpful message wh
 
 ## API Keys You Need
 
-### 1. Transport for NSW (TfNSW)
+### 1. Google Maps (optional)
+
+Used for the **Nearby Places** section.
+
+1. Open [Google Cloud Console](https://console.cloud.google.com)
+2. Enable the **Maps JavaScript API** and **Places API**
+3. Create an API key and restrict it to your domain (HTTP referrer restriction)
+4. Set environment variable: `GOOGLE_MAPS_API_KEY=<your key>`
+
+If not set, the Nearby Places card shows a configuration prompt and the rest of the dashboard works normally.
+
+### 2. Transport for NSW (TfNSW)
 
 Used for **parking** and **metro disruptions**.
 
@@ -55,7 +67,9 @@ The app calls the NSW FuelCheck API (`api.onegov.nsw.gov.au/FuelCheckApp/v1/fuel
 ./mvnw spring-boot:run
 
 # With all features enabled
-TFNSW_API_KEY=xxx ./mvnw spring-boot:run
+TFNSW_API_KEY=xxx \
+GOOGLE_MAPS_API_KEY=yyy \
+./mvnw spring-boot:run
 ```
 
 Visit <http://localhost:8080>.
@@ -66,7 +80,10 @@ Visit <http://localhost:8080>.
 
 ```bash
 docker build -t sydney-info .
-docker run -p 8080:8080 -e TFNSW_API_KEY=xxx sydney-info
+docker run -p 8080:8080 \
+  -e TFNSW_API_KEY=xxx \
+  -e GOOGLE_MAPS_API_KEY=yyy \
+  sydney-info
 ```
 
 The Dockerfile uses a **multi-stage build** (Maven build → JRE runtime) keeping the image small.
@@ -142,10 +159,11 @@ fly secrets set TFNSW_API_KEY=xxx   # update secret
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `PORT` | No | `8080` | HTTP port (auto-set by Render) |
-| `TFNSW_API_KEY` | Yes* | — | TfNSW Open Data API key |
+| `TFNSW_API_KEY` | No* | — | TfNSW Open Data API key |
+| `GOOGLE_MAPS_API_KEY` | No* | — | Google Maps JavaScript API + Places API key |
 | `CARPARK_FACILITY_ID` | No | auto | TfNSW car park facility ID (leave blank to auto-discover Cherrybrook) |
 
-\* The app runs without `TFNSW_API_KEY` but will show a configuration prompt for parking and metro sections. Weather and fuel prices require no credentials.
+\* The app runs without these keys but will show configuration prompts for the relevant sections. Weather and fuel prices require no credentials.
 
 ---
 

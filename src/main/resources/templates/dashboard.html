@@ -64,103 +64,67 @@
                     <i class="bi bi-cloud-sun-fill fs-5"></i>
                     <span class="section-title">Weather Forecast</span>
                 </div>
-                <div class="card-body">
+                <div class="card-body py-2">
                     <div class="row g-0">
 
                         <!-- Cherrybrook -->
-                        <div class="col-12 col-md-6 location-divider pe-md-4">
-                            <h6 class="fw-bold mb-3">
-                                <i class="bi bi-geo-alt me-1 text-primary"></i>Cherrybrook
-                            </h6>
+                        <div class="col-12 col-md-6 location-divider pe-md-4 py-2">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <i class="bi bi-geo-alt text-primary"></i>
+                                <span class="fw-semibold">Cherrybrook</span>
+                            </div>
 
                             <div th:if="${!cherrybrookWeather.dataAvailable}" class="text-muted small">
                                 <i class="bi bi-exclamation-circle"></i>
                                 <span th:text="${cherrybrookWeather.errorMessage}"></span>
                             </div>
 
-                            <div th:if="${cherrybrookWeather.dataAvailable}">
-                                <!-- Current temperature -->
-                                <div class="d-flex align-items-end gap-3 mb-3">
-                                    <div>
-                                        <div class="current-temp" th:text="${cherrybrookWeather.currentTempFormatted} + '°'"></div>
-                                        <div class="current-temp-label">Now</div>
-                                    </div>
-                                    <div class="mb-1 text-muted">
-                                        <div th:each="day,i : ${cherrybrookWeather.forecasts}" th:if="${i.index == 0}">
-                                            <span class="temp-min" th:text="'L: ' + ${day.minTemp} + '°'"></span>
-                                            <span class="mx-1 text-muted">·</span>
-                                            <span class="temp-max" th:text="'H: ' + ${day.maxTemp} + '°'"></span>
-                                        </div>
-                                    </div>
+                            <div th:if="${cherrybrookWeather.dataAvailable}" class="d-flex flex-wrap align-items-center gap-3">
+                                <div class="d-flex align-items-baseline gap-1">
+                                    <span class="current-temp" th:text="${cherrybrookWeather.currentTempFormatted} + '°'"></span>
+                                    <span class="current-temp-label">now</span>
                                 </div>
-                                <!-- Today / Tomorrow cards -->
-                                <div class="row g-2">
-                                    <div class="col-6" th:each="day : ${cherrybrookWeather.forecasts}">
-                                        <div class="weather-card border">
-                                            <div class="fw-semibold text-muted small mb-1" th:text="${day.label}"></div>
-                                            <div class="weather-icon" th:text="${day.weatherIcon}"></div>
-                                            <div class="small mt-1" th:text="${day.weatherDescription}"></div>
-                                            <div class="temp-range mt-2">
-                                                <span class="temp-min" th:text="${day.minTemp} + '°'"></span>
-                                                <span class="text-muted mx-1">/</span>
-                                                <span class="temp-max" th:text="${day.maxTemp} + '°'"></span>
-                                            </div>
-                                            <div class="small text-info mt-1"
-                                                 th:if="${day.precipitationProbability > 0}">
-                                                <i class="bi bi-droplet me-1"></i>
-                                                <span th:text="${day.precipitationProbability} + '%'"></span>
-                                            </div>
-                                        </div>
-                                    </div>
+                                <div th:each="day : ${cherrybrookWeather.forecasts}"
+                                     class="d-flex align-items-center gap-1 border rounded px-2 py-1">
+                                    <span class="small text-muted fw-semibold" th:text="${day.label}"></span>
+                                    <span th:text="${day.weatherIcon}"></span>
+                                    <span class="small temp-min" th:text="${day.minTemp} + '°'"></span>
+                                    <span class="text-muted small">/</span>
+                                    <span class="small temp-max" th:text="${day.maxTemp} + '°'"></span>
+                                    <span class="small text-info" th:if="${day.precipitationProbability > 0}">
+                                        <i class="bi bi-droplet"></i><span th:text="${day.precipitationProbability} + '%'"></span>
+                                    </span>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Sydney CBD -->
-                        <div class="col-12 col-md-6 ps-md-4 pt-3 pt-md-0">
-                            <h6 class="fw-bold mb-3">
-                                <i class="bi bi-buildings me-1 text-primary"></i>Sydney CBD
-                            </h6>
+                        <div class="col-12 col-md-6 ps-md-4 py-2">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <i class="bi bi-buildings text-primary"></i>
+                                <span class="fw-semibold">Sydney CBD</span>
+                            </div>
 
                             <div th:if="${!sydneyWeather.dataAvailable}" class="text-muted small">
                                 <i class="bi bi-exclamation-circle"></i>
                                 <span th:text="${sydneyWeather.errorMessage}"></span>
                             </div>
 
-                            <div th:if="${sydneyWeather.dataAvailable}">
-                                <!-- Current temperature -->
-                                <div class="d-flex align-items-end gap-3 mb-3">
-                                    <div>
-                                        <div class="current-temp" th:text="${sydneyWeather.currentTempFormatted} + '°'"></div>
-                                        <div class="current-temp-label">Now</div>
-                                    </div>
-                                    <div class="mb-1 text-muted">
-                                        <div th:each="day,i : ${sydneyWeather.forecasts}" th:if="${i.index == 0}">
-                                            <span class="temp-min" th:text="'L: ' + ${day.minTemp} + '°'"></span>
-                                            <span class="mx-1 text-muted">·</span>
-                                            <span class="temp-max" th:text="'H: ' + ${day.maxTemp} + '°'"></span>
-                                        </div>
-                                    </div>
+                            <div th:if="${sydneyWeather.dataAvailable}" class="d-flex flex-wrap align-items-center gap-3">
+                                <div class="d-flex align-items-baseline gap-1">
+                                    <span class="current-temp" th:text="${sydneyWeather.currentTempFormatted} + '°'"></span>
+                                    <span class="current-temp-label">now</span>
                                 </div>
-                                <!-- Today / Tomorrow cards -->
-                                <div class="row g-2">
-                                    <div class="col-6" th:each="day : ${sydneyWeather.forecasts}">
-                                        <div class="weather-card border">
-                                            <div class="fw-semibold text-muted small mb-1" th:text="${day.label}"></div>
-                                            <div class="weather-icon" th:text="${day.weatherIcon}"></div>
-                                            <div class="small mt-1" th:text="${day.weatherDescription}"></div>
-                                            <div class="temp-range mt-2">
-                                                <span class="temp-min" th:text="${day.minTemp} + '°'"></span>
-                                                <span class="text-muted mx-1">/</span>
-                                                <span class="temp-max" th:text="${day.maxTemp} + '°'"></span>
-                                            </div>
-                                            <div class="small text-info mt-1"
-                                                 th:if="${day.precipitationProbability > 0}">
-                                                <i class="bi bi-droplet me-1"></i>
-                                                <span th:text="${day.precipitationProbability} + '%'"></span>
-                                            </div>
-                                        </div>
-                                    </div>
+                                <div th:each="day : ${sydneyWeather.forecasts}"
+                                     class="d-flex align-items-center gap-1 border rounded px-2 py-1">
+                                    <span class="small text-muted fw-semibold" th:text="${day.label}"></span>
+                                    <span th:text="${day.weatherIcon}"></span>
+                                    <span class="small temp-min" th:text="${day.minTemp} + '°'"></span>
+                                    <span class="text-muted small">/</span>
+                                    <span class="small temp-max" th:text="${day.maxTemp} + '°'"></span>
+                                    <span class="small text-info" th:if="${day.precipitationProbability > 0}">
+                                        <i class="bi bi-droplet"></i><span th:text="${day.precipitationProbability} + '%'"></span>
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -347,6 +311,50 @@
             </div>
         </div>
 
+        <!-- NEARBY PLACES CARD -->
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-success text-white d-flex align-items-center gap-2">
+                    <i class="bi bi-map-fill fs-5"></i>
+                    <span class="section-title">Nearby Places — Cherrybrook</span>
+                </div>
+                <div class="card-body">
+
+                    <div th:if="${#strings.isEmpty(googleMapsApiKey)}" class="text-center py-3">
+                        <i class="bi bi-map fs-1 text-warning"></i>
+                        <p class="mt-2 text-muted">Set <code>GOOGLE_MAPS_API_KEY</code> to enable the nearby places map.</p>
+                        <p class="text-muted small">Enable the <strong>Maps JavaScript API</strong> and <strong>Places API</strong> in Google Cloud Console.</p>
+                    </div>
+
+                    <div th:if="${!#strings.isEmpty(googleMapsApiKey)}">
+                        <div class="mb-3 d-flex flex-wrap gap-2" id="place-filters">
+                            <button class="btn btn-sm btn-success" data-type="restaurant">
+                                <i class="bi bi-knife me-1"></i>Restaurants
+                            </button>
+                            <button class="btn btn-sm btn-outline-success" data-type="cafe">
+                                <i class="bi bi-cup-hot me-1"></i>Cafes
+                            </button>
+                            <button class="btn btn-sm btn-outline-success" data-type="supermarket">
+                                <i class="bi bi-cart me-1"></i>Supermarkets
+                            </button>
+                            <button class="btn btn-sm btn-outline-success" data-type="pharmacy">
+                                <i class="bi bi-capsule me-1"></i>Pharmacies
+                            </button>
+                            <button class="btn btn-sm btn-outline-success" data-type="park">
+                                <i class="bi bi-tree me-1"></i>Parks
+                            </button>
+                            <button class="btn btn-sm btn-outline-success" data-type="gym">
+                                <i class="bi bi-bicycle me-1"></i>Gyms
+                            </button>
+                        </div>
+                        <div id="map" style="height:420px; border-radius:8px;"></div>
+                        <div id="places-list" class="row g-2 mt-3"></div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
     </div><!-- row -->
 </div><!-- container -->
 
@@ -354,5 +362,89 @@
 <script>
     setTimeout(function() { window.location.reload(); }, 5 * 60 * 1000);
 </script>
+
+<script th:if="${!#strings.isEmpty(googleMapsApiKey)}" th:inline="javascript">
+    const MAPS_API_KEY = /*[[${googleMapsApiKey}]]*/ '';
+
+    function initMap() {
+        const centre = { lat: -33.733, lng: 151.050 };
+
+        const map = new google.maps.Map(document.getElementById('map'), {
+            center: centre,
+            zoom: 14,
+            mapTypeControl: false,
+            streetViewControl: false,
+        });
+
+        new google.maps.Marker({
+            position: centre,
+            map: map,
+            title: 'Cherrybrook',
+            icon: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png'
+        });
+
+        const service = new google.maps.places.PlacesService(map);
+        let markers = [];
+
+        function searchPlaces(type) {
+            markers.forEach(m => m.setMap(null));
+            markers = [];
+            document.getElementById('places-list').innerHTML = '';
+
+            service.nearbySearch({ location: centre, radius: 1500, type: type }, (results, status) => {
+                if (status !== google.maps.places.PlacesServiceStatus.OK || !results) return;
+
+                results.slice(0, 12).forEach(place => {
+                    const marker = new google.maps.Marker({
+                        position: place.geometry.location,
+                        map: map,
+                        title: place.name,
+                    });
+                    markers.push(marker);
+
+                    const info = new google.maps.InfoWindow({
+                        content: `<strong>${place.name}</strong><br><span style="color:#666">${place.vicinity}</span>`
+                            + (place.rating ? `<br>⭐ ${place.rating}` : '')
+                    });
+                    marker.addListener('click', () => info.open(map, marker));
+
+                    const stars = place.rating
+                        ? `<span class="text-warning">${'★'.repeat(Math.round(place.rating))}</span> <span class="text-muted small">${place.rating}</span>`
+                        : '';
+                    const open = place.opening_hours
+                        ? (place.opening_hours.open_now
+                            ? '<span class="badge bg-success small">Open</span>'
+                            : '<span class="badge bg-secondary small">Closed</span>')
+                        : '';
+                    document.getElementById('places-list').insertAdjacentHTML('beforeend', `
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <div class="border rounded-3 p-2 h-100">
+                                <div class="fw-semibold">${place.name}</div>
+                                <div class="text-muted small mb-1">${place.vicinity}</div>
+                                <div class="d-flex align-items-center gap-2">${stars} ${open}</div>
+                            </div>
+                        </div>`);
+                });
+            });
+        }
+
+        searchPlaces('restaurant');
+
+        document.querySelectorAll('#place-filters button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('#place-filters button').forEach(b => {
+                    b.classList.remove('btn-success');
+                    b.classList.add('btn-outline-success');
+                });
+                btn.classList.remove('btn-outline-success');
+                btn.classList.add('btn-success');
+                searchPlaces(btn.dataset.type);
+            });
+        });
+    }
+</script>
+<script th:if="${!#strings.isEmpty(googleMapsApiKey)}"
+        th:src="'https://maps.googleapis.com/maps/api/js?key=' + ${googleMapsApiKey} + '&libraries=places&callback=initMap'"
+        async defer></script>
 </body>
 </html>

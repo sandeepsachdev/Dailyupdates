@@ -9,6 +9,8 @@ services:
         value: 8080
       - key: TFNSW_API_KEY
         sync: false
+      - key: GOOGLE_MAPS_API_KEY
+        sync: false
       # Leave blank to auto-discover Cherrybrook from the full facilities list
       - key: CARPARK_FACILITY_ID
         value: ""
