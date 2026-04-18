@@ -316,7 +316,8 @@
             <div class="card">
                 <div class="card-header bg-success text-white d-flex align-items-center gap-2">
                     <i class="bi bi-map-fill fs-5"></i>
-                    <span class="section-title">Nearby Places — Cherrybrook</span>
+                    <span class="section-title">Nearby Places</span>
+                    <span class="ms-auto small" id="map-location-label"></span>
                 </div>
                 <div class="card-body">
 
@@ -365,28 +366,26 @@
 
 <script th:if="${!#strings.isEmpty(googleMapsApiKey)}" th:inline="javascript">
     const MAPS_API_KEY = /*[[${googleMapsApiKey}]]*/ '';
+    const CHERRYBROOK = { lat: -33.733, lng: 151.050 };
 
     function initMap() {
-        const centre = { lat: -33.733, lng: 151.050 };
-
         const map = new google.maps.Map(document.getElementById('map'), {
-            center: centre,
+            center: CHERRYBROOK,
             zoom: 14,
             mapTypeControl: false,
             streetViewControl: false,
         });
 
-        new google.maps.Marker({
-            position: centre,
-            map: map,
-            title: 'Cherrybrook',
-            icon: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png'
-        });
-
         const service = new google.maps.places.PlacesService(map);
         let markers = [];
+        let youMarker = null;
+        let currentType = 'restaurant';
 
-        function searchPlaces(type) {
+        function setLocationLabel(text) {
+            document.getElementById('map-location-label').textContent = text;
+        }
+
+        function searchPlaces(centre, type) {
             markers.forEach(m => m.setMap(null));
             markers = [];
             document.getElementById('places-list').innerHTML = '';
@@ -428,7 +427,29 @@
             });
         }
 
-        searchPlaces('restaurant');
+        function useLocation(centre, label) {
+            map.setCenter(centre);
+            if (youMarker) youMarker.setMap(null);
+            youMarker = new google.maps.Marker({
+                position: centre,
+                map: map,
+                title: label,
+                icon: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png'
+            });
+            setLocationLabel(label);
+            searchPlaces(centre, currentType);
+        }
+
+        // Try to get the user's current location; fall back to Cherrybrook
+        if (navigator.geolocation) {
+            setLocationLabel('Locating…');
+            navigator.geolocation.getCurrentPosition(
+                pos => useLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }, 'Your location'),
+                ()  => useLocation(CHERRYBROOK, 'Cherrybrook (default)')
+            );
+        } else {
+            useLocation(CHERRYBROOK, 'Cherrybrook');
+        }
 
         document.querySelectorAll('#place-filters button').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -438,7 +459,8 @@
                 });
                 btn.classList.remove('btn-outline-success');
                 btn.classList.add('btn-success');
-                searchPlaces(btn.dataset.type);
+                currentType = btn.dataset.type;
+                if (youMarker) searchPlaces(youMarker.getPosition(), currentType);
             });
         });
     }
