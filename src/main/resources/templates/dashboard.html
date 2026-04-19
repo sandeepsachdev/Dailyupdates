@@ -31,8 +31,6 @@
         .fuel-range { font-size: 0.8rem; color: #6c757d; }
         .last-updated { font-size: 0.8rem; color: #6c757d; }
         .location-divider { border-right: 1px solid #dee2e6; }
-        .event-card { transition: box-shadow 0.15s; }
-        .event-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
         @media (max-width: 768px) {
             .spot-count { font-size: 2rem; }
             .current-temp { font-size: 2.2rem; }
@@ -306,70 +304,6 @@
                         <p class="text-muted small mt-3 mb-0">
                             <i class="bi bi-info-circle me-1"></i>
                             Prices in cents per litre. Average, min and max across Sydney metro stations.
-                        </p>
-                    </div>
-
-                </div>
-            </div>
-        </div>
-
-        <!-- SYDNEY EVENTS CARD -->
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header bg-purple text-white d-flex align-items-center gap-2"
-                     style="background-color:#6f42c1!important;">
-                    <i class="bi bi-ticket-perforated-fill fs-5"></i>
-                    <span class="section-title">What's On in Sydney</span>
-                    <span class="ms-auto small text-white-50">Next 7 days</span>
-                </div>
-                <div class="card-body">
-
-                    <div th:if="${!eventInfo.dataAvailable}" class="text-center py-3">
-                        <i class="bi bi-ticket-perforated fs-1 text-muted"></i>
-                        <p class="mt-2 text-muted" th:text="${eventInfo.errorMessage}"></p>
-                        <p class="text-muted small">Register free at <a href="https://developer.ticketmaster.com" target="_blank">developer.ticketmaster.com</a> and set <code>TICKETMASTER_API_KEY</code>.</p>
-                    </div>
-
-                    <div th:if="${eventInfo.dataAvailable and #lists.isEmpty(eventInfo.events)}"
-                         class="text-center py-3 text-muted">
-                        <i class="bi bi-calendar-x fs-1"></i>
-                        <p class="mt-2">No events found for the next 7 days.</p>
-                    </div>
-
-                    <div th:if="${eventInfo.dataAvailable and !#lists.isEmpty(eventInfo.events)}">
-                        <div class="row g-3">
-                            <div class="col-12 col-md-6 col-lg-4" th:each="ev : ${eventInfo.events}">
-                                <a th:href="${ev.url}" target="_blank" rel="noopener"
-                                   class="text-decoration-none text-dark">
-                                    <div class="border rounded-3 overflow-hidden h-100 event-card">
-                                        <div th:if="${ev.imageUrl != null and !ev.imageUrl.isEmpty()}">
-                                            <img th:src="${ev.imageUrl}" alt="" class="w-100"
-                                                 style="height:120px;object-fit:cover;">
-                                        </div>
-                                        <div class="p-2">
-                                            <div class="fw-semibold lh-sm mb-1" th:text="${ev.name}"></div>
-                                            <div class="small text-muted">
-                                                <i class="bi bi-calendar3 me-1"></i>
-                                                <span th:text="${ev.date}"></span>
-                                                <span th:if="${ev.time != null and !ev.time.isEmpty()}"
-                                                      th:text="' · ' + ${ev.time}"></span>
-                                            </div>
-                                            <div class="small text-muted" th:if="${ev.venue != null and !ev.venue.isEmpty()}">
-                                                <i class="bi bi-geo-alt me-1"></i>
-                                                <span th:text="${ev.venue}"></span>
-                                            </div>
-                                            <div class="mt-1" th:if="${ev.genre != null and !ev.genre.isEmpty()}">
-                                                <span class="badge rounded-pill bg-light text-dark border small"
-                                                      th:text="${ev.genre}"></span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </a>
-                            </div>
-                        </div>
-                        <p class="text-muted small mt-3 mb-0">
-                            <i class="bi bi-info-circle me-1"></i>
-                            Events sourced from Ticketmaster. Click any event to buy tickets.
                         </p>
                     </div>
 
