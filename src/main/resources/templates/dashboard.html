@@ -329,14 +329,26 @@
 
                     <div th:if="${!#strings.isEmpty(googleMapsApiKey)}">
                         <div class="mb-3 d-flex flex-wrap gap-2" id="place-filters">
-                            <button class="btn btn-sm btn-success"         data-type="restaurant" onclick="placeFilterClick(this)"><i class="bi bi-knife me-1"></i>Restaurants</button>
-                            <button class="btn btn-sm btn-outline-success" data-type="cafe"       onclick="placeFilterClick(this)"><i class="bi bi-cup-hot me-1"></i>Cafes</button>
-                            <button class="btn btn-sm btn-outline-success" data-type="supermarket" onclick="placeFilterClick(this)"><i class="bi bi-cart me-1"></i>Supermarkets</button>
-                            <button class="btn btn-sm btn-outline-success" data-type="pharmacy"   onclick="placeFilterClick(this)"><i class="bi bi-capsule me-1"></i>Pharmacies</button>
-                            <button class="btn btn-sm btn-outline-success" data-type="park"       onclick="placeFilterClick(this)"><i class="bi bi-tree me-1"></i>Parks</button>
-                            <button class="btn btn-sm btn-outline-success" data-type="gym"        onclick="placeFilterClick(this)"><i class="bi bi-bicycle me-1"></i>Gyms</button>
+                            <button class="btn btn-sm btn-success" data-type="restaurant">
+                                <i class="bi bi-knife me-1"></i>Restaurants
+                            </button>
+                            <button class="btn btn-sm btn-outline-success" data-type="cafe">
+                                <i class="bi bi-cup-hot me-1"></i>Cafes
+                            </button>
+                            <button class="btn btn-sm btn-outline-success" data-type="supermarket">
+                                <i class="bi bi-cart me-1"></i>Supermarkets
+                            </button>
+                            <button class="btn btn-sm btn-outline-success" data-type="pharmacy">
+                                <i class="bi bi-capsule me-1"></i>Pharmacies
+                            </button>
+                            <button class="btn btn-sm btn-outline-success" data-type="park">
+                                <i class="bi bi-tree me-1"></i>Parks
+                            </button>
+                            <button class="btn btn-sm btn-outline-success" data-type="gym">
+                                <i class="bi bi-bicycle me-1"></i>Gyms
+                            </button>
                         </div>
-                        <div id="map" style="height:420px; border-radius:8px;" th:attr="data-apikey=${googleMapsApiKey}"></div>
+                        <div id="map" style="height:420px; border-radius:8px;"></div>
                         <div id="places-list" class="row g-2 mt-3"></div>
                     </div>
 
@@ -352,95 +364,107 @@
     setTimeout(function() { window.location.reload(); }, 5 * 60 * 1000);
 </script>
 
-<script th:if="${!#strings.isEmpty(googleMapsApiKey)}">
+<script th:if="${!#strings.isEmpty(googleMapsApiKey)}" th:inline="javascript">
+    const MAPS_API_KEY = /*[[${googleMapsApiKey}]]*/ '';
     const CHERRYBROOK = { lat: -33.733, lng: 151.050 };
-    let _map, _service, _markers = [], _youMarker = null;
-    let _currentType = 'restaurant';
-    let _currentCentre = CHERRYBROOK;
-
-    function placesSearch(centre, type) {
-        _markers.forEach(function(m) { m.setMap(null); });
-        _markers = [];
-        document.getElementById('places-list').innerHTML = '';
-
-        _service.nearbySearch({ location: centre, radius: 1500, type: type }, function(results, status) {
-            if (status !== google.maps.places.PlacesServiceStatus.OK || !results) return;
-            results.slice(0, 12).forEach(function(place) {
-                var marker = new google.maps.Marker({
-                    position: place.geometry.location,
-                    map: _map,
-                    title: place.name
-                });
-                _markers.push(marker);
-                var info = new google.maps.InfoWindow({
-                    content: '<strong>' + place.name + '</strong><br>'
-                        + '<span style="color:#666">' + place.vicinity + '</span>'
-                        + (place.rating ? '<br>&#11088; ' + place.rating : '')
-                });
-                marker.addListener('click', function() { info.open(_map, marker); });
-
-                var stars = place.rating
-                    ? '<span class="text-warning">' + '&#9733;'.repeat(Math.round(place.rating)) + '</span> <span class="text-muted small">' + place.rating + '</span>'
-                    : '';
-                var openBadge = place.opening_hours
-                    ? (place.opening_hours.open_now
-                        ? '<span class="badge bg-success small">Open</span>'
-                        : '<span class="badge bg-secondary small">Closed</span>')
-                    : '';
-                document.getElementById('places-list').insertAdjacentHTML('beforeend',
-                    '<div class="col-12 col-md-6 col-lg-4">'
-                    + '<div class="border rounded-3 p-2 h-100">'
-                    + '<div class="fw-semibold">' + place.name + '</div>'
-                    + '<div class="text-muted small mb-1">' + place.vicinity + '</div>'
-                    + '<div class="d-flex align-items-center gap-2">' + stars + ' ' + openBadge + '</div>'
-                    + '</div></div>');
-            });
-        });
-    }
-
-    function placeFilterClick(btn) {
-        document.querySelectorAll('#place-filters button').forEach(function(b) {
-            b.classList.remove('btn-success');
-            b.classList.add('btn-outline-success');
-        });
-        btn.classList.remove('btn-outline-success');
-        btn.classList.add('btn-success');
-        _currentType = btn.getAttribute('data-type');
-        placesSearch(_currentCentre, _currentType);
-    }
-
-    function useMapLocation(centre, label) {
-        _currentCentre = centre;
-        _map.setCenter(centre);
-        if (_youMarker) _youMarker.setMap(null);
-        _youMarker = new google.maps.Marker({
-            position: centre,
-            map: _map,
-            title: label,
-            icon: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png'
-        });
-        document.getElementById('map-location-label').textContent = label;
-        placesSearch(centre, _currentType);
-    }
 
     function initMap() {
-        _map = new google.maps.Map(document.getElementById('map'), {
+        const map = new google.maps.Map(document.getElementById('map'), {
             center: CHERRYBROOK,
             zoom: 14,
             mapTypeControl: false,
-            streetViewControl: false
+            streetViewControl: false,
         });
-        _service = new google.maps.places.PlacesService(_map);
 
+        const service = new google.maps.places.PlacesService(map);
+        let markers = [];
+        let youMarker = null;
+        let currentType = 'restaurant';
+        let currentCentre = CHERRYBROOK;
+
+        function setLocationLabel(text) {
+            document.getElementById('map-location-label').textContent = text;
+        }
+
+        function searchPlaces(centre, type) {
+            markers.forEach(m => m.setMap(null));
+            markers = [];
+            document.getElementById('places-list').innerHTML = '';
+
+            service.nearbySearch({ location: centre, radius: 1500, type: type }, (results, status) => {
+                if (status !== google.maps.places.PlacesServiceStatus.OK || !results) return;
+
+                results.slice(0, 12).forEach(place => {
+                    const marker = new google.maps.Marker({
+                        position: place.geometry.location,
+                        map: map,
+                        title: place.name,
+                    });
+                    markers.push(marker);
+
+                    const info = new google.maps.InfoWindow({
+                        content: `<strong>${place.name}</strong><br><span style="color:#666">${place.vicinity}</span>`
+                            + (place.rating ? `<br>⭐ ${place.rating}` : '')
+                    });
+                    marker.addListener('click', () => info.open(map, marker));
+
+                    const stars = place.rating
+                        ? `<span class="text-warning">${'★'.repeat(Math.round(place.rating))}</span> <span class="text-muted small">${place.rating}</span>`
+                        : '';
+                    const open = place.opening_hours
+                        ? (place.opening_hours.open_now
+                            ? '<span class="badge bg-success small">Open</span>'
+                            : '<span class="badge bg-secondary small">Closed</span>')
+                        : '';
+                    document.getElementById('places-list').insertAdjacentHTML('beforeend', `
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <div class="border rounded-3 p-2 h-100">
+                                <div class="fw-semibold">${place.name}</div>
+                                <div class="text-muted small mb-1">${place.vicinity}</div>
+                                <div class="d-flex align-items-center gap-2">${stars} ${open}</div>
+                            </div>
+                        </div>`);
+                });
+            });
+        }
+
+        function useLocation(centre, label) {
+            currentCentre = centre;
+            map.setCenter(centre);
+            if (youMarker) youMarker.setMap(null);
+            youMarker = new google.maps.Marker({
+                position: centre,
+                map: map,
+                title: label,
+                icon: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png'
+            });
+            setLocationLabel(label);
+            searchPlaces(centre, currentType);
+        }
+
+        // Try to get the user's current location; fall back to Cherrybrook
         if (navigator.geolocation) {
-            document.getElementById('map-location-label').textContent = 'Locating\u2026';
+            setLocationLabel('Locating…');
             navigator.geolocation.getCurrentPosition(
-                function(pos) { useMapLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }, 'Your location'); },
-                function()    { useMapLocation(CHERRYBROOK, 'Cherrybrook (default)'); }
+                pos => useLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }, 'Your location'),
+                ()  => useLocation(CHERRYBROOK, 'Cherrybrook (default)')
             );
         } else {
-            useMapLocation(CHERRYBROOK, 'Cherrybrook');
+            useLocation(CHERRYBROOK, 'Cherrybrook');
         }
+
+        document.querySelectorAll('#place-filters button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('#place-filters button').forEach(b => {
+                    b.classList.remove('btn-success');
+                    b.classList.add('btn-outline-success');
+                });
+                btn.classList.remove('btn-outline-success');
+                btn.classList.add('btn-success');
+                currentType = btn.dataset.type;
+                searchPlaces(currentCentre, currentType);
+            });
+        });
     }
 </script>
 <script th:if="${!#strings.isEmpty(googleMapsApiKey)}"
