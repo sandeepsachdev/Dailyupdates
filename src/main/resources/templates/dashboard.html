@@ -15,13 +15,12 @@
         .parking-bar .progress { height: 20px; border-radius: 8px; }
         .spot-count { font-size: 2.5rem; font-weight: 700; line-height: 1; }
         .spot-label { font-size: 0.85rem; color: #6c757d; }
-        .current-temp { font-size: 2.8rem; font-weight: 700; line-height: 1; }
-        .current-temp-label { font-size: 0.8rem; color: #6c757d; }
-        .weather-card { text-align: center; padding: 1rem; background: #fff; border-radius: 10px; }
-        .weather-icon { font-size: 2.2rem; }
-        .temp-range { font-size: 1.05rem; font-weight: 600; }
-        .temp-max { color: #dc3545; }
-        .temp-min { color: #0d6efd; }
+        .current-temp { font-size: 1.6rem; font-weight: 700; line-height: 1; }
+        .weather-pill { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.2rem 0.55rem;
+                        background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 20px; font-size: 0.8rem; }
+        .weather-icon { font-size: 1.1rem; }
+        .temp-max { color: #dc3545; font-weight: 600; }
+        .temp-min { color: #0d6efd; font-weight: 600; }
         .alert-item { border-left: 4px solid; padding: 0.75rem 1rem; margin-bottom: 0.5rem;
                        background: #fff; border-radius: 0 8px 8px 0; }
         .alert-item.severity-danger { border-color: #dc3545; background: #fff5f5; }
@@ -64,103 +63,49 @@
                     <i class="bi bi-cloud-sun-fill fs-5"></i>
                     <span class="section-title">Weather Forecast</span>
                 </div>
-                <div class="card-body">
-                    <div class="row g-0">
+                <div class="card-body py-2">
+                    <div class="row g-2">
 
                         <!-- Cherrybrook -->
-                        <div class="col-12 col-md-6 location-divider pe-md-4">
-                            <h6 class="fw-bold mb-3">
-                                <i class="bi bi-geo-alt me-1 text-primary"></i>Cherrybrook
-                            </h6>
-
-                            <div th:if="${!cherrybrookWeather.dataAvailable}" class="text-muted small">
-                                <i class="bi bi-exclamation-circle"></i>
-                                <span th:text="${cherrybrookWeather.errorMessage}"></span>
-                            </div>
-
-                            <div th:if="${cherrybrookWeather.dataAvailable}">
-                                <!-- Current temperature -->
-                                <div class="d-flex align-items-end gap-3 mb-3">
-                                    <div>
-                                        <div class="current-temp" th:text="${cherrybrookWeather.currentTempFormatted} + '°'"></div>
-                                        <div class="current-temp-label">Now</div>
-                                    </div>
-                                    <div class="mb-1 text-muted">
-                                        <div th:each="day,i : ${cherrybrookWeather.forecasts}" th:if="${i.index == 0}">
-                                            <span class="temp-min" th:text="'L: ' + ${day.minTemp} + '°'"></span>
-                                            <span class="mx-1 text-muted">·</span>
-                                            <span class="temp-max" th:text="'H: ' + ${day.maxTemp} + '°'"></span>
-                                        </div>
-                                    </div>
+                        <div class="col-12 col-md-6">
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <span class="fw-semibold text-muted small"><i class="bi bi-geo-alt text-primary"></i> Cherrybrook</span>
+                                <div th:if="${!cherrybrookWeather.dataAvailable}" class="text-muted small">
+                                    <i class="bi bi-exclamation-circle"></i>
+                                    <span th:text="${cherrybrookWeather.errorMessage}"></span>
                                 </div>
-                                <!-- Today / Tomorrow cards -->
-                                <div class="row g-2">
-                                    <div class="col-6" th:each="day : ${cherrybrookWeather.forecasts}">
-                                        <div class="weather-card border">
-                                            <div class="fw-semibold text-muted small mb-1" th:text="${day.label}"></div>
-                                            <div class="weather-icon" th:text="${day.weatherIcon}"></div>
-                                            <div class="small mt-1" th:text="${day.weatherDescription}"></div>
-                                            <div class="temp-range mt-2">
-                                                <span class="temp-min" th:text="${day.minTemp} + '°'"></span>
-                                                <span class="text-muted mx-1">/</span>
-                                                <span class="temp-max" th:text="${day.maxTemp} + '°'"></span>
-                                            </div>
-                                            <div class="small text-info mt-1"
-                                                 th:if="${day.precipitationProbability > 0}">
-                                                <i class="bi bi-droplet me-1"></i>
-                                                <span th:text="${day.precipitationProbability} + '%'"></span>
-                                            </div>
-                                        </div>
-                                    </div>
+                                <div th:if="${cherrybrookWeather.dataAvailable}" class="d-flex align-items-center gap-2 flex-wrap">
+                                    <span class="current-temp" th:text="${cherrybrookWeather.currentTempFormatted} + '°'"></span>
+                                    <span th:each="day : ${cherrybrookWeather.forecasts}" class="weather-pill">
+                                        <span class="text-muted" style="font-size:0.7rem" th:text="${day.label}"></span>
+                                        <span class="weather-icon" th:text="${day.weatherIcon}"></span>
+                                        <span class="temp-min" th:text="${day.minTemp} + '°'"></span>
+                                        <span class="text-muted">/</span>
+                                        <span class="temp-max" th:text="${day.maxTemp} + '°'"></span>
+                                        <span th:if="${day.precipitationProbability > 0}" class="text-info" th:text="'💧' + ${day.precipitationProbability} + '%'"></span>
+                                    </span>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Sydney CBD -->
-                        <div class="col-12 col-md-6 ps-md-4 pt-3 pt-md-0">
-                            <h6 class="fw-bold mb-3">
-                                <i class="bi bi-buildings me-1 text-primary"></i>Sydney CBD
-                            </h6>
-
-                            <div th:if="${!sydneyWeather.dataAvailable}" class="text-muted small">
-                                <i class="bi bi-exclamation-circle"></i>
-                                <span th:text="${sydneyWeather.errorMessage}"></span>
-                            </div>
-
-                            <div th:if="${sydneyWeather.dataAvailable}">
-                                <!-- Current temperature -->
-                                <div class="d-flex align-items-end gap-3 mb-3">
-                                    <div>
-                                        <div class="current-temp" th:text="${sydneyWeather.currentTempFormatted} + '°'"></div>
-                                        <div class="current-temp-label">Now</div>
-                                    </div>
-                                    <div class="mb-1 text-muted">
-                                        <div th:each="day,i : ${sydneyWeather.forecasts}" th:if="${i.index == 0}">
-                                            <span class="temp-min" th:text="'L: ' + ${day.minTemp} + '°'"></span>
-                                            <span class="mx-1 text-muted">·</span>
-                                            <span class="temp-max" th:text="'H: ' + ${day.maxTemp} + '°'"></span>
-                                        </div>
-                                    </div>
+                        <div class="col-12 col-md-6">
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <span class="fw-semibold text-muted small"><i class="bi bi-buildings text-primary"></i> Sydney CBD</span>
+                                <div th:if="${!sydneyWeather.dataAvailable}" class="text-muted small">
+                                    <i class="bi bi-exclamation-circle"></i>
+                                    <span th:text="${sydneyWeather.errorMessage}"></span>
                                 </div>
-                                <!-- Today / Tomorrow cards -->
-                                <div class="row g-2">
-                                    <div class="col-6" th:each="day : ${sydneyWeather.forecasts}">
-                                        <div class="weather-card border">
-                                            <div class="fw-semibold text-muted small mb-1" th:text="${day.label}"></div>
-                                            <div class="weather-icon" th:text="${day.weatherIcon}"></div>
-                                            <div class="small mt-1" th:text="${day.weatherDescription}"></div>
-                                            <div class="temp-range mt-2">
-                                                <span class="temp-min" th:text="${day.minTemp} + '°'"></span>
-                                                <span class="text-muted mx-1">/</span>
-                                                <span class="temp-max" th:text="${day.maxTemp} + '°'"></span>
-                                            </div>
-                                            <div class="small text-info mt-1"
-                                                 th:if="${day.precipitationProbability > 0}">
-                                                <i class="bi bi-droplet me-1"></i>
-                                                <span th:text="${day.precipitationProbability} + '%'"></span>
-                                            </div>
-                                        </div>
-                                    </div>
+                                <div th:if="${sydneyWeather.dataAvailable}" class="d-flex align-items-center gap-2 flex-wrap">
+                                    <span class="current-temp" th:text="${sydneyWeather.currentTempFormatted} + '°'"></span>
+                                    <span th:each="day : ${sydneyWeather.forecasts}" class="weather-pill">
+                                        <span class="text-muted" style="font-size:0.7rem" th:text="${day.label}"></span>
+                                        <span class="weather-icon" th:text="${day.weatherIcon}"></span>
+                                        <span class="temp-min" th:text="${day.minTemp} + '°'"></span>
+                                        <span class="text-muted">/</span>
+                                        <span class="temp-max" th:text="${day.maxTemp} + '°'"></span>
+                                        <span th:if="${day.precipitationProbability > 0}" class="text-info" th:text="'💧' + ${day.precipitationProbability} + '%'"></span>
+                                    </span>
                                 </div>
                             </div>
                         </div>
