@@ -23,7 +23,8 @@ import java.util.Map;
  * GTFS-RT field numbers used:
  *   FeedMessage:  2=entity
  *   FeedEntity:   5=alert
- *   Alert:        6=cause, 7=effect, 10=header_text, 11=description_text
+ *   Alert:        1=active_period, 6=cause, 7=effect, 10=header_text, 11=description_text
+ *   TimeRange:    1=start, 2=end (both uint64 epoch seconds)
  *   TranslatedString: 1=translation
  *   Translation:  1=text, 2=language
  */
@@ -143,6 +144,7 @@ public class MetroService {
             int tag = in.readTag();
             if (tag == 0) break;
             switch (tag >>> 3) {
+                case 1  -> parseActivePeriod(in.readBytes().toByteArray(), alert);
                 case 6  -> alert.setCause(CAUSES.getOrDefault(in.readInt32(), "UNKNOWN_CAUSE"));
                 case 7  -> alert.setEffect(EFFECTS.getOrDefault(in.readInt32(), "UNKNOWN_EFFECT"));
                 case 10 -> alert.setHeader(parseTranslatedString(in.readBytes().toByteArray()));
@@ -151,6 +153,31 @@ public class MetroService {
             }
         }
         return alert;
+    }
+
+    /**
+     * Parses a TimeRange (Alert.active_period). An alert may carry several active
+     * periods; we keep the earliest start and the latest end so the displayed
+     * range spans the whole disruption.
+     */
+    private void parseActivePeriod(byte[] data, MetroAlert alert) throws IOException {
+        CodedInputStream in = CodedInputStream.newInstance(data);
+        long start = 0, end = 0;
+        while (!in.isAtEnd()) {
+            int tag = in.readTag();
+            if (tag == 0) break;
+            switch (tag >>> 3) {
+                case 1 -> start = in.readUInt64();
+                case 2 -> end = in.readUInt64();
+                default -> in.skipField(tag);
+            }
+        }
+        if (start > 0 && (alert.getActivePeriodStart() == null || start < alert.getActivePeriodStart())) {
+            alert.setActivePeriodStart(start);
+        }
+        if (end > 0 && (alert.getActivePeriodEnd() == null || end > alert.getActivePeriodEnd())) {
+            alert.setActivePeriodEnd(end);
+        }
     }
 
     private String parseTranslatedString(byte[] data) throws IOException {
