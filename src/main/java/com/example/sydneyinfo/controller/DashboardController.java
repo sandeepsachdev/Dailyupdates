@@ -1,5 +1,6 @@
 package com.example.sydneyinfo.controller;
 
+import com.example.sydneyinfo.model.FuelInfo;
 import com.example.sydneyinfo.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -19,16 +20,26 @@ public class DashboardController {
     @Autowired private MetroService metroService;
     @Autowired private FuelService fuelService;
 
+    /** Present only when a database is configured; null otherwise (see PriceRecorder). */
+    @Autowired(required = false) private PriceRecorder priceRecorder;
+
     private static final DateTimeFormatter FORMATTER =
         DateTimeFormatter.ofPattern("d MMM yyyy, h:mm a");
 
     @GetMapping("/")
     public String dashboard(Model model) {
+        FuelInfo fuelInfo = fuelService.getFuelPrices();
+
+        // Record the current date and prices to PostgreSQL on every page load.
+        if (priceRecorder != null) {
+            priceRecorder.record(fuelInfo);
+        }
+
         model.addAttribute("parking", parkingService.getParking());
         model.addAttribute("cherrybrookWeather", weatherService.getCherrybrookWeather());
         model.addAttribute("sydneyWeather", weatherService.getSydneyWeather());
         model.addAttribute("metroAlerts", metroService.getAlerts());
-        model.addAttribute("fuelInfo", fuelService.getFuelPrices());
+        model.addAttribute("fuelInfo", fuelInfo);
         model.addAttribute("lastUpdated",
             ZonedDateTime.now(ZoneId.of("Australia/Sydney")).format(FORMATTER));
         return "dashboard";
