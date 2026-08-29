@@ -9,13 +9,19 @@ import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * One row per dashboard page load, capturing the moment the fuel prices were
- * displayed. The individual per-fuel-type figures live in {@link PriceSnapshotItem}.
+ * One row per day, capturing the fuel prices at the time of the first dashboard
+ * load that day. The individual per-fuel-type figures live in
+ * {@link PriceSnapshotItem}.
+ *
+ * <p>{@code snapshotDate} carries a UNIQUE constraint so at most one snapshot can
+ * exist per calendar day (Sydney time), even if two requests race — see
+ * {@code PriceRecorder}.
  */
 @Entity
 @Table(name = "price_snapshot")
@@ -25,7 +31,11 @@ public class PriceSnapshot {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** When this snapshot was recorded (page-load time). */
+    /** The Sydney calendar day this snapshot belongs to (one snapshot per day). */
+    @Column(name = "snapshot_date", nullable = false, unique = true)
+    private LocalDate snapshotDate;
+
+    /** The exact instant the snapshot was recorded. */
     @Column(name = "recorded_at", nullable = false)
     private OffsetDateTime recordedAt;
 
@@ -38,8 +48,9 @@ public class PriceSnapshot {
     public PriceSnapshot() {
     }
 
-    public PriceSnapshot(OffsetDateTime recordedAt, String region) {
+    public PriceSnapshot(OffsetDateTime recordedAt, LocalDate snapshotDate, String region) {
         this.recordedAt = recordedAt;
+        this.snapshotDate = snapshotDate;
         this.region = region;
     }
 
@@ -50,6 +61,8 @@ public class PriceSnapshot {
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
+    public LocalDate getSnapshotDate() { return snapshotDate; }
+    public void setSnapshotDate(LocalDate snapshotDate) { this.snapshotDate = snapshotDate; }
     public OffsetDateTime getRecordedAt() { return recordedAt; }
     public void setRecordedAt(OffsetDateTime recordedAt) { this.recordedAt = recordedAt; }
     public String getRegion() { return region; }
