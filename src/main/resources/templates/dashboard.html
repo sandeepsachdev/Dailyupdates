@@ -26,6 +26,12 @@
         .alert-item.severity-danger { border-color: #dc3545; background: #fff5f5; }
         .alert-item.severity-warning { border-color: #ffc107; background: #fffbf0; }
         .alert-item.severity-info { border-color: #0dcaf0; background: #f0fbff; }
+        .alert-item.is-clickable { cursor: pointer; }
+        .alert-item.is-clickable:hover { filter: brightness(0.985); }
+        .alert-details { display: none; }
+        .alert-item.open .alert-details { display: block; }
+        .alert-toggle { flex-shrink: 0; transition: transform 0.15s ease; }
+        .alert-item.open .alert-toggle { transform: rotate(90deg); }
         .fuel-price { font-size: 1.3rem; font-weight: 700; }
         .fuel-range { font-size: 0.8rem; color: #6c757d; }
         .last-updated { font-size: 0.8rem; color: #6c757d; }
@@ -185,26 +191,38 @@
                     </div>
 
                     <div th:if="${!#lists.isEmpty(metroAlerts)}">
+                        <!-- Collapsed by default: only the title and date show; click to reveal the full text. -->
                         <div th:each="alert : ${metroAlerts}"
                              class="alert-item"
-                             th:classappend="${'severity-' + alert.severityClass}">
+                             th:classappend="${'severity-' + alert.severityClass}"
+                             th:with="hasDetails=${(alert.description != null and !alert.description.isEmpty()) or (alert.effect != null and alert.effect != 'UNKNOWN_EFFECT')}">
                             <div class="d-flex align-items-start gap-2">
                                 <i class="bi bi-exclamation-triangle-fill mt-1"
                                    th:classappend="${'text-' + alert.severityClass}"></i>
-                                <div>
-                                    <div class="fw-semibold" th:text="${alert.header}"></div>
-                                    <div class="small mt-1 fw-semibold"
-                                         th:classappend="${'text-' + alert.severityClass}"
-                                         th:if="${alert.dateRange != null}">
-                                        <i class="bi bi-calendar-event me-1"></i>
-                                        <span th:text="${alert.dateRange}"></span>
+                                <div class="flex-grow-1">
+                                    <!-- Always-visible summary: title + date -->
+                                    <div class="d-flex align-items-start gap-2">
+                                        <div class="flex-grow-1">
+                                            <div class="fw-semibold" th:text="${alert.header}"></div>
+                                            <div class="small mt-1 fw-semibold"
+                                                 th:classappend="${'text-' + alert.severityClass}"
+                                                 th:if="${alert.dateRange != null}">
+                                                <i class="bi bi-calendar-event me-1"></i>
+                                                <span th:text="${alert.dateRange}"></span>
+                                            </div>
+                                        </div>
+                                        <i class="bi bi-chevron-right alert-toggle text-muted mt-1"
+                                           th:if="${hasDetails}"></i>
                                     </div>
-                                    <div class="text-muted small mt-1"
-                                         th:if="${alert.description != null and !alert.description.isEmpty()}"
-                                         th:text="${alert.description}"></div>
-                                    <div class="mt-1" th:if="${alert.effect != null and alert.effect != 'UNKNOWN_EFFECT'}">
-                                        <span class="badge bg-secondary text-uppercase small"
-                                              th:text="${alert.effect.replace('_', ' ')}"></span>
+                                    <!-- Hidden until the item is clicked -->
+                                    <div class="alert-details" th:if="${hasDetails}">
+                                        <div class="text-muted small mt-2"
+                                             th:if="${alert.description != null and !alert.description.isEmpty()}"
+                                             th:text="${alert.description}"></div>
+                                        <div class="mt-1" th:if="${alert.effect != null and alert.effect != 'UNKNOWN_EFFECT'}">
+                                            <span class="badge bg-secondary text-uppercase small"
+                                                  th:text="${alert.effect.replace('_', ' ')}"></span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -314,6 +332,27 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     setTimeout(function() { window.location.reload(); }, 5 * 60 * 1000);
+</script>
+
+<!-- Expand/collapse metro disruption details on click (summary stays: title + date) -->
+<script>
+(function () {
+    document.querySelectorAll('.alert-item').forEach(function (item) {
+        if (!item.querySelector('.alert-details')) return; // nothing to expand
+        item.classList.add('is-clickable');
+        item.setAttribute('role', 'button');
+        item.setAttribute('tabindex', '0');
+        item.setAttribute('aria-expanded', 'false');
+        function toggle() {
+            var open = item.classList.toggle('open');
+            item.setAttribute('aria-expanded', open ? 'true' : 'false');
+        }
+        item.addEventListener('click', toggle);
+        item.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+        });
+    });
+})();
 </script>
 
 <!-- E10 price-trend line chart (dependency-free inline SVG) -->
