@@ -361,13 +361,19 @@
     var el = document.getElementById('e10Chart');
     if (!el) return;
 
-    var data;
-    try { data = JSON.parse(el.dataset.points || '[]'); } catch (e) { data = []; }
-    if (!Array.isArray(data) || data.length < 2) {
+    var raw;
+    try { raw = JSON.parse(el.dataset.points || '[]'); } catch (e) { raw = []; }
+    if (!Array.isArray(raw) || raw.length < 2) {
         el.innerHTML = '<div class="text-muted small">Not enough history yet — the trend '
             + 'appears once at least two days of prices have been recorded.</div>';
         return;
     }
+
+    // Round to the displayed precision (1 dp) so equal-looking values plot at the
+    // same height and the y-axis never repeats a label.
+    var data = raw.map(function (d) {
+        return { label: d.label, price: Math.round(d.price * 10) / 10 };
+    });
 
     var NS = 'http://www.w3.org/2000/svg';
     var W = 520, H = 160, padL = 44, padR = 16, padT = 22, padB = 26;
@@ -377,7 +383,7 @@
     var dataMin = Math.min.apply(null, prices);
     var dataMax = Math.max.apply(null, prices);
     var min = dataMin, max = dataMax;
-    if (min === max) { min -= 1; max += 1; }
+    if (min === max) { min -= 0.5; max += 0.5; }  // flat line -> centre it vertically
     var pad = (max - min) * 0.15;
     min -= pad; max += pad;
 
@@ -397,15 +403,20 @@
         'aria-label': 'E10 average price trend over the last ' + data.length + ' entries'
     });
 
-    // Gridlines + y-axis labels at the real data min / mid / max
+    // Gridlines + y-axis labels at distinct rounded values (deduped so a value
+    // like 200.7 is never shown on two lines).
+    var seenTick = {};
     [dataMin, (dataMin + dataMax) / 2, dataMax].forEach(function (v) {
+        var label = v.toFixed(1);
+        if (seenTick[label]) return;
+        seenTick[label] = true;
         var gy = y(v);
         svg.appendChild(el2('line', {
             x1: padL, x2: W - padR, y1: gy, y2: gy, stroke: '#e9ecef', 'stroke-width': 1
         }));
         svg.appendChild(el2('text', {
             x: padL - 6, y: gy + 3, 'text-anchor': 'end', 'font-size': 10, fill: '#adb5bd'
-        }, v.toFixed(1)));
+        }, label));
     });
 
     // Trend line
