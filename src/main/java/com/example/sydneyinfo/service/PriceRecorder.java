@@ -1,8 +1,10 @@
 package com.example.sydneyinfo.service;
 
+import com.example.sydneyinfo.model.E10TrendPoint;
 import com.example.sydneyinfo.model.FuelInfo;
 import com.example.sydneyinfo.model.FuelPrice;
-import com.example.sydneyinfo.model.PricePoint;
+import com.example.sydneyinfo.model.LocalFuelPrice;
+import com.example.sydneyinfo.model.LocalFuelStation;
 import com.example.sydneyinfo.model.PriceSnapshot;
 import com.example.sydneyinfo.model.PriceSnapshotItem;
 import com.example.sydneyinfo.repository.PriceSnapshotRepository;
@@ -24,7 +26,7 @@ import java.util.List;
 
 /**
  * Persists a daily snapshot of the current fuel prices, and reads back recent
- * history for the price-trend chart.
+ * history for the E10 price-trend chart.
  *
  * <p>Only instantiated when a database is configured
  * ({@code app.persistence.enabled=true}, set by
@@ -71,6 +73,7 @@ public class PriceRecorder {
                     p.getAveragePrice(), p.getMinPrice(), p.getMaxPrice(),
                     p.getStationCount()));
             }
+            snapshot.setLocalE10Price(localE10Price(fuelInfo.getLocalStations()));
             repository.save(snapshot);
         } catch (DataIntegrityViolationException e) {
             // Another concurrent request recorded today's snapshot first
@@ -81,19 +84,50 @@ public class PriceRecorder {
     }
 
     /**
-     * The most recent price points for one fuel type, oldest first (ready for a
-     * left-to-right chart). Returns an empty list on any error so the page is
-     * never affected.
+     * The E10 price at the Ampol Foodary Cherrybrook station, or {@code null} if no
+     * local station / E10 price is available. Prefers the Ampol station; otherwise
+     * falls back to the first local station that lists an E10 price.
+     */
+    private Double localE10Price(List<LocalFuelStation> stations) {
+        if (stations == null || stations.isEmpty()) return null;
+        LocalFuelStation preferred = null;
+        for (LocalFuelStation s : stations) {
+            if (s.getName() != null && s.getName().toUpperCase().contains("AMPOL")) {
+                preferred = s;
+                break;
+            }
+        }
+        Double e10 = e10Of(preferred);
+        if (e10 != null) return e10;
+        for (LocalFuelStation s : stations) {
+            e10 = e10Of(s);
+            if (e10 != null) return e10;
+        }
+        return null;
+    }
+
+    private Double e10Of(LocalFuelStation station) {
+        if (station == null || station.getPrices() == null) return null;
+        for (LocalFuelPrice lp : station.getPrices()) {
+            if ("E10".equals(lp.getFuelType())) return lp.getPrice();
+        }
+        return null;
+    }
+
+    /**
+     * The most recent E10 trend points (Sydney average + Ampol Foodary local price),
+     * oldest first (ready for a left-to-right chart). Returns an empty list on any
+     * error so the page is never affected.
      */
     @Transactional(readOnly = true)
-    public List<PricePoint> recentHistory(String fuelType, int limit) {
+    public List<E10TrendPoint> recentE10Trend(int limit) {
         try {
-            List<PricePoint> points =
-                new ArrayList<>(repository.findRecentPoints(fuelType, PageRequest.of(0, limit)));
+            List<E10TrendPoint> points =
+                new ArrayList<>(repository.findRecentE10Trend(PageRequest.of(0, limit)));
             Collections.reverse(points); // newest-first -> oldest-first
             return points;
         } catch (Exception e) {
-            log.warn("Could not load price history: {}", e.getMessage());
+            log.warn("Could not load E10 price history: {}", e.getMessage());
             return List.of();
         }
     }

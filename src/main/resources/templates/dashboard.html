@@ -355,7 +355,7 @@
 })();
 </script>
 
-<!-- E10 price-trend line chart (dependency-free inline SVG) -->
+<!-- E10 price-trend line chart: Sydney average vs Ampol Foodary (dependency-free inline SVG) -->
 <script>
 (function () {
     var el = document.getElementById('e10Chart');
@@ -371,17 +371,23 @@
 
     // Round to the displayed precision (1 dp) so equal-looking values plot at the
     // same height and the y-axis never repeats a label.
+    var r1 = function (v) { return (v == null) ? null : Math.round(v * 10) / 10; };
     var data = raw.map(function (d) {
-        return { label: d.label, price: Math.round(d.price * 10) / 10 };
+        return { label: d.label, average: r1(d.average), local: r1(d.local) };
     });
 
+    var AVG = '#198754', LOCAL = '#fd7e14';
     var NS = 'http://www.w3.org/2000/svg';
     var W = 520, H = 160, padL = 44, padR = 16, padT = 22, padB = 26;
     var innerW = W - padL - padR, innerH = H - padT - padB;
 
-    var prices = data.map(function (d) { return d.price; });
-    var dataMin = Math.min.apply(null, prices);
-    var dataMax = Math.max.apply(null, prices);
+    var vals = [];
+    data.forEach(function (d) {
+        vals.push(d.average);
+        if (d.local != null) vals.push(d.local);
+    });
+    var dataMin = Math.min.apply(null, vals);
+    var dataMax = Math.max.apply(null, vals);
     var min = dataMin, max = dataMax;
     if (min === max) { min -= 0.5; max += 0.5; }  // flat line -> centre it vertically
     var pad = (max - min) * 0.15;
@@ -400,7 +406,7 @@
     var svg = el2('svg', {
         viewBox: '0 0 ' + W + ' ' + H, width: '100%',
         preserveAspectRatio: 'xMidYMid meet', role: 'img',
-        'aria-label': 'E10 average price trend over the last ' + data.length + ' entries'
+        'aria-label': 'E10 price trend, Sydney average and Ampol Foodary, last ' + data.length + ' entries'
     });
 
     // Gridlines + y-axis labels at distinct rounded values (deduped so a value
@@ -419,39 +425,68 @@
         }, label));
     });
 
-    // Trend line
-    var dPath = data.map(function (d, i) {
-        return (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(d.price).toFixed(1);
-    }).join(' ');
-    svg.appendChild(el2('path', {
-        d: dPath, fill: 'none', stroke: '#198754', 'stroke-width': 2.5,
-        'stroke-linejoin': 'round', 'stroke-linecap': 'round'
-    }));
-
-    // Points, value labels, x-axis date labels
+    // x-axis date labels (once per day)
     data.forEach(function (d, i) {
-        var cx = x(i), cy = y(d.price), last = i === data.length - 1;
-        svg.appendChild(el2('circle', {
-            cx: cx, cy: cy, r: last ? 4.5 : 3.5,
-            fill: last ? '#198754' : '#ffffff', stroke: '#198754', 'stroke-width': 2
-        }));
         svg.appendChild(el2('text', {
-            x: cx, y: cy - 9, 'text-anchor': 'middle', 'font-size': 10.5,
-            'font-weight': last ? 700 : 600, fill: last ? '#198754' : '#495057'
-        }, d.price.toFixed(1)));
-        svg.appendChild(el2('text', {
-            x: cx, y: H - 8, 'text-anchor': 'middle', 'font-size': 10, fill: '#6c757d'
+            x: x(i), y: H - 8, 'text-anchor': 'middle', 'font-size': 10, fill: '#6c757d'
         }, d.label));
     });
 
-    el.innerHTML = '';
-    el.appendChild(svg);
-    el.appendChild(el2Html('div', 'text-muted small mt-1',
-        'Average E10 price (¢/L) — one entry per day.'));
+    // Draw one series (array of {i, v}); label the last point, offset by labelDy.
+    function drawSeries(pts, color, labelDy) {
+        if (pts.length >= 2) {
+            var dPath = pts.map(function (p, k) {
+                return (k ? 'L' : 'M') + x(p.i).toFixed(1) + ' ' + y(p.v).toFixed(1);
+            }).join(' ');
+            svg.appendChild(el2('path', {
+                d: dPath, fill: 'none', stroke: color, 'stroke-width': 2.5,
+                'stroke-linejoin': 'round', 'stroke-linecap': 'round'
+            }));
+        }
+        pts.forEach(function (p, k) {
+            var last = k === pts.length - 1;
+            svg.appendChild(el2('circle', {
+                cx: x(p.i), cy: y(p.v), r: last ? 4.5 : 3.5,
+                fill: last ? color : '#ffffff', stroke: color, 'stroke-width': 2
+            }));
+        });
+        if (pts.length) {
+            var lp = pts[pts.length - 1];
+            svg.appendChild(el2('text', {
+                x: x(lp.i), y: y(lp.v) + labelDy, 'text-anchor': 'middle',
+                'font-size': 10.5, 'font-weight': 700, fill: color
+            }, lp.v.toFixed(1)));
+        }
+    }
 
-    function el2Html(tag, cls, text) {
-        var n = document.createElement(tag);
-        n.className = cls; n.textContent = text; return n;
+    var avgPts = data.map(function (d, i) { return { i: i, v: d.average }; });
+    var localPts = [];
+    data.forEach(function (d, i) { if (d.local != null) localPts.push({ i: i, v: d.local }); });
+
+    drawSeries(avgPts, AVG, -9);
+    if (localPts.length) drawSeries(localPts, LOCAL, 16);
+
+    // Legend + caption around the chart
+    el.innerHTML = '';
+    var legend = document.createElement('div');
+    legend.className = 'd-flex flex-wrap gap-3 small text-muted mb-1';
+    legend.appendChild(legendItem(AVG, 'Sydney average'));
+    if (localPts.length) legend.appendChild(legendItem(LOCAL, 'Ampol Foodary Cherrybrook'));
+    el.appendChild(legend);
+    el.appendChild(svg);
+    var cap = document.createElement('div');
+    cap.className = 'text-muted small mt-1';
+    cap.textContent = 'E10 price (¢/L) — one entry per day.';
+    el.appendChild(cap);
+
+    function legendItem(color, text) {
+        var span = document.createElement('span');
+        span.className = 'd-inline-flex align-items-center gap-1';
+        var dot = document.createElement('span');
+        dot.style.cssText = 'display:inline-block;width:10px;height:10px;border-radius:50%;background:' + color;
+        span.appendChild(dot);
+        span.appendChild(document.createTextNode(text));
+        return span;
     }
 })();
 </script>

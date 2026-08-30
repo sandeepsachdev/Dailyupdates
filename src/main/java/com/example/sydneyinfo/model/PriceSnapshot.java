@@ -16,8 +16,9 @@ import java.util.List;
 
 /**
  * One row per day, capturing the fuel prices at the time of the first dashboard
- * load that day. The individual per-fuel-type figures live in
- * {@link PriceSnapshotItem}.
+ * load that day. The per-fuel-type Sydney-metro figures live in
+ * {@link PriceSnapshotItem}; the single Ampol Foodary Cherrybrook E10 price is
+ * stored inline as {@code localE10Price}.
  *
  * <p>{@code snapshotDate} carries a UNIQUE constraint so at most one snapshot can
  * exist per calendar day (Sydney time), even if two requests race — see
@@ -41,6 +42,10 @@ public class PriceSnapshot {
 
     @Column(name = "region")
     private String region;
+
+    /** E10 price at the Ampol Foodary Cherrybrook station, if available that day. */
+    @Column(name = "local_e10_price")
+    private Double localE10Price;
 
     @OneToMany(mappedBy = "snapshot", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PriceSnapshotItem> items = new ArrayList<>();
@@ -67,6 +72,8 @@ public class PriceSnapshot {
     public void setRecordedAt(OffsetDateTime recordedAt) { this.recordedAt = recordedAt; }
     public String getRegion() { return region; }
     public void setRegion(String region) { this.region = region; }
+    public Double getLocalE10Price() { return localE10Price; }
+    public void setLocalE10Price(Double localE10Price) { this.localE10Price = localE10Price; }
     public List<PriceSnapshotItem> getItems() { return items; }
     public void setItems(List<PriceSnapshotItem> items) { this.items = items; }
 }

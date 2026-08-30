@@ -1,7 +1,6 @@
 package com.example.sydneyinfo.controller;
 
 import com.example.sydneyinfo.model.FuelInfo;
-import com.example.sydneyinfo.model.PricePoint;
 import com.example.sydneyinfo.service.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,11 +35,11 @@ public class DashboardController {
     public String dashboard(Model model) {
         FuelInfo fuelInfo = fuelService.getFuelPrices();
 
-        // Persist at most one snapshot per day, then expose the recent E10 trend.
+        // Persist at most one snapshot per day, then expose the recent E10 trend
+        // (Sydney average + Ampol Foodary Cherrybrook) for the chart.
         if (priceRecorder != null) {
             priceRecorder.record(fuelInfo);
-            model.addAttribute("e10ChartJson",
-                toJson(priceRecorder.recentHistory("E10", 5)));
+            model.addAttribute("e10ChartJson", toJson(priceRecorder.recentE10Trend(5)));
         }
 
         model.addAttribute("parking", parkingService.getParking());
@@ -54,7 +53,7 @@ public class DashboardController {
     }
 
     /** Serialises the E10 history to a JSON string for the inline chart, or null on failure. */
-    private String toJson(List<PricePoint> points) {
+    private String toJson(List<?> points) {
         if (points == null || points.isEmpty()) return null;
         try {
             return objectMapper.writeValueAsString(points);
