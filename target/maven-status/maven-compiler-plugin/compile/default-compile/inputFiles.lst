@@ -1,0 +1,15 @@
+/home/user/Dailyupdates/src/main/java/com/example/sydneyinfo/model/ParkingInfo.java
+/home/user/Dailyupdates/src/main/java/com/example/sydneyinfo/model/DayForecast.java
+/home/user/Dailyupdates/src/main/java/com/example/sydneyinfo/config/AppConfig.java
+/home/user/Dailyupdates/src/main/java/com/example/sydneyinfo/model/FuelInfo.java
+/home/user/Dailyupdates/src/main/java/com/example/sydneyinfo/model/LocalFuelStation.java
+/home/user/Dailyupdates/src/main/java/com/example/sydneyinfo/service/WeatherService.java
+/home/user/Dailyupdates/src/main/java/com/example/sydneyinfo/model/MetroAlert.java
+/home/user/Dailyupdates/src/main/java/com/example/sydneyinfo/service/ParkingService.java
+/home/user/Dailyupdates/src/main/java/com/example/sydneyinfo/service/FuelService.java
+/home/user/Dailyupdates/src/main/java/com/example/sydneyinfo/model/FuelPrice.java
+/home/user/Dailyupdates/src/main/java/com/example/sydneyinfo/model/LocalFuelPrice.java
+/home/user/Dailyupdates/src/main/java/com/example/sydneyinfo/SydneyInfoApplication.java
+/home/user/Dailyupdates/src/main/java/com/example/sydneyinfo/model/LocationWeather.java
+/home/user/Dailyupdates/src/main/java/com/example/sydneyinfo/service/MetroService.java
+/home/user/Dailyupdates/src/main/java/com/example/sydneyinfo/controller/DashboardController.java
