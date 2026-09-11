@@ -17,6 +17,9 @@ import java.util.List;
 @Controller
 public class DashboardController {
 
+    /** How many weeks of price history the E10 trend chart shows. */
+    private static final int TREND_WEEKS = 6;
+
     @Autowired private ParkingService parkingService;
     @Autowired private WeatherService weatherService;
     @Autowired private MetroService metroService;
@@ -35,11 +38,11 @@ public class DashboardController {
     public String dashboard(Model model) {
         FuelInfo fuelInfo = fuelService.getFuelPrices();
 
-        // Persist at most one snapshot per day, then expose the recent E10 trend
-        // (Sydney average + Ampol Foodary Cherrybrook) for the chart.
+        // Persist at most one snapshot per day, then expose the last 6 weeks of the
+        // E10 trend (Sydney average + Ampol Foodary Cherrybrook) for the chart.
         if (priceRecorder != null) {
             priceRecorder.record(fuelInfo);
-            model.addAttribute("e10ChartJson", toJson(priceRecorder.recentE10Trend(5)));
+            model.addAttribute("e10ChartJson", toJson(priceRecorder.recentE10Trend(TREND_WEEKS)));
         }
 
         model.addAttribute("parking", parkingService.getParking());

@@ -12,7 +12,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,8 +19,6 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -115,17 +112,15 @@ public class PriceRecorder {
     }
 
     /**
-     * The most recent E10 trend points (Sydney average + Ampol Foodary local price),
-     * oldest first (ready for a left-to-right chart). Returns an empty list on any
-     * error so the page is never affected.
+     * The E10 trend (Sydney average + Ampol Foodary local price) over the last
+     * {@code weeks} weeks, oldest first (ready for a left-to-right chart). Returns
+     * an empty list on any error so the page is never affected.
      */
     @Transactional(readOnly = true)
-    public List<E10TrendPoint> recentE10Trend(int limit) {
+    public List<E10TrendPoint> recentE10Trend(int weeks) {
         try {
-            List<E10TrendPoint> points =
-                new ArrayList<>(repository.findRecentE10Trend(PageRequest.of(0, limit)));
-            Collections.reverse(points); // newest-first -> oldest-first
-            return points;
+            LocalDate since = LocalDate.now(SYDNEY).minusWeeks(weeks);
+            return repository.findE10TrendSince(since);
         } catch (Exception e) {
             log.warn("Could not load E10 price history: {}", e.getMessage());
             return List.of();

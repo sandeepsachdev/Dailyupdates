@@ -27,13 +27,13 @@ public interface PriceSnapshotRepository extends JpaRepository<PriceSnapshot, Lo
     List<PricePoint> findRecentPoints(@Param("fuelType") String fuelType, Pageable pageable);
 
     /**
-     * The most recent E10 trend points, newest first: the Sydney metro average
-     * paired with the Ampol Foodary Cherrybrook price recorded that day.
+     * The E10 trend points on or after {@code since}, oldest first: the Sydney metro
+     * average paired with the Ampol Foodary Cherrybrook price recorded that day.
      */
     @Query("select new com.example.sydneyinfo.model.E10TrendPoint("
          + "    s.snapshotDate, i.averagePrice, s.localE10Price) "
          + "from PriceSnapshot s join s.items i "
-         + "where i.fuelType = 'E10' "
-         + "order by s.snapshotDate desc")
-    List<E10TrendPoint> findRecentE10Trend(Pageable pageable);
+         + "where i.fuelType = 'E10' and s.snapshotDate >= :since "
+         + "order by s.snapshotDate asc")
+    List<E10TrendPoint> findE10TrendSince(@Param("since") LocalDate since);
 }

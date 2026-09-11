@@ -64,18 +64,17 @@ class PriceRecorderIntegrationTest {
         assertEquals("Sydney Metro", latest.getRegion());
         assertEquals(2, latest.getItems().size(), "one item per fuel type");
         assertTrue(latest.getItems().stream().anyMatch(i -> "U91".equals(i.getFuelType())));
-        // Ampol Foodary Cherrybrook E10 price captured inline
         assertNotNull(latest.getLocalE10Price(), "local Ampol E10 price recorded");
         assertEquals(197.5, latest.getLocalE10Price(), 0.001);
     }
 
     @Test
     @Transactional
-    void recentE10TrendReturnsAverageAndLocalOldestFirst() {
+    void recentE10TrendReturnsLastSixWeeksOldestFirst() {
         LocalDate today = LocalDate.now(SYDNEY);
         OffsetDateTime now = ZonedDateTime.now(SYDNEY).toOffsetDateTime();
 
-        // day-2: avg 182.0, local 179.0 ; day-1: avg 181.0, local null ; today: avg 180.0, local 178.0
+        // In range: day-2 avg 182 local 179 ; day-1 avg 181 local null ; today avg 180 local 178
         Double[] locals = { 179.0, null, 178.0 };
         for (int d = 2; d >= 0; d--) {
             PriceSnapshot s = new PriceSnapshot(now.minusDays(d), today.minusDays(d), "Sydney Metro");
@@ -83,11 +82,15 @@ class PriceRecorderIntegrationTest {
             s.setLocalE10Price(locals[2 - d]);
             repository.save(s);
         }
+        // Out of range: 7 weeks ago -> must be excluded from a 6-week window
+        PriceSnapshot old = new PriceSnapshot(now.minusWeeks(7), today.minusWeeks(7), "Sydney Metro");
+        old.addItem(new PriceSnapshotItem("E10", "E10 Ethanol", 100.0, 90.0, 110.0, 40));
+        old.setLocalE10Price(99.0);
+        repository.save(old);
 
-        List<E10TrendPoint> series = priceRecorder.recentE10Trend(5);
+        List<E10TrendPoint> series = priceRecorder.recentE10Trend(6);
 
-        assertEquals(3, series.size(), "one point per recorded day");
-        // Oldest first, so the chart reads left-to-right in time.
+        assertEquals(3, series.size(), "only the last 6 weeks, oldest first");
         assertEquals(today.minusDays(2), series.get(0).getDate());
         assertEquals(today, series.get(2).getDate());
         assertEquals(182.0, series.get(0).getAverage(), 0.001);
